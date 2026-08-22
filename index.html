@@ -908,12 +908,38 @@
             pedidoAtual.dataEmissao = document.getElementById('dataEmissao').value;
             carregarTodosCadastros();
 
-            setInterval(function() {
-                var frames = document.querySelectorAll('iframe');
-                frames.forEach(function(f) { if (f.src && f.src.indexOf('netlify') !== -1) f.remove(); });
-                var els = document.querySelectorAll('[id*="netlify"], [class*="netlify"]');
-                els.forEach(function(el) { el.remove(); });
-            }, 500);
+            function removerBannerNetlify() {
+                document.querySelectorAll('iframe').forEach(function(f) {
+                    if (f.src && f.src.indexOf('netlify') !== -1) f.remove();
+                });
+                document.querySelectorAll('[id*="netlify"], [class*="netlify"], [data-netlify]').forEach(function(el) {
+                    el.remove();
+                });
+                document.querySelectorAll('a[href*="netlify"]').forEach(function(el) {
+                    var p = el.parentElement;
+                    if (p) p.remove();
+                });
+                document.querySelectorAll('div[style*="fixed"]').forEach(function(el) {
+                    if (el.textContent.indexOf('Netlify') !== -1 || el.innerHTML.indexOf('netlify') !== -1) el.remove();
+                });
+            }
+            removerBannerNetlify();
+            setInterval(removerBannerNetlify, 300);
+
+            var obs = new MutationObserver(function(mutations) {
+                mutations.forEach(function(m) {
+                    m.addedNodes.forEach(function(n) {
+                        if (n.nodeType === 1) {
+                            var html = n.outerHTML || '';
+                            var txt = n.textContent || '';
+                            if (html.indexOf('netlify') !== -1 || txt.indexOf('Netlify') !== -1) {
+                                n.remove();
+                            }
+                        }
+                    });
+                });
+            });
+            obs.observe(document.body, { childList: true, subtree: true });
         })();
     </script>
 </body>

@@ -1,0 +1,6 @@
+name = "controle-entrega-materiais"
+compatibility_date = "2024-01-01"
+account_id = "11e2b9cc146f352d537105117efa6b01"
+
+[site]
+bucket = "./"
