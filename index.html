@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Entrega - Materiais Cirurgicos</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,6 +40,7 @@
             body { background: white !important; }
         }
     </style>
+    <style>.netlify-badge, [class*="netlify"], [id*="netlify"]{display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important;position:fixed!important;bottom:-100px!important;z-index:-9999!important}</style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
@@ -446,7 +448,7 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
-        window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxUudSKjnd9is6UYL08ReDIkm_X6WPhDTfaNxHGqI4VBiMv99a8x5rjJzqdi9lLgMbo/exec';
+        window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxINgvlmkWu_954jokaERvA5NzSNclXwRCkAoav8m0yAVmyr_lYP40q4zJtDu28KxXa5Q/exec';
         var GAS_URL = window.GAS_API_URL || '';
 
         var pedidoAtual = {
@@ -555,19 +557,12 @@
         }
 
         async function gasPost(body) {
-            if (!GAS_URL) { showToast('GAS_URL nao configurada. Verifique config.js', 'error'); return null; }
-            try {
-                var resp = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify(body)
-                });
-                return await resp.json();
-            } catch (e) {
-                console.error('gasPost error:', e);
-                showToast('Erro ao comunicar com o servidor.', 'error');
-                return null;
-            }
+            if (!GAS_URL) { showToast('GAS_URL nao configurada.', 'error'); return null; }
+            var send = {};
+            Object.keys(body).forEach(function(k) {
+                send[k] = (Array.isArray(body[k])) ? JSON.stringify(body[k]) : body[k];
+            });
+            return await gasGet(send);
         }
 
         async function buscarMaterial() {
@@ -795,9 +790,10 @@
 
             var result = await gasGet({ action: 'listarCadastros', tipo: tipo });
             select.innerHTML = '<option value="">Selecione...</option>';
-            if (result && result.success && result.data) {
-                cadastrosCache[tipo] = result.data;
-                result.data.forEach(function(item) {
+            var dados = result.dados || result.data;
+            if (result && result.success && dados) {
+                cadastrosCache[tipo] = dados;
+                dados.forEach(function(item) {
                     var opt = document.createElement('option');
                     opt.value = item.id || item.nome;
                     opt.textContent = item.nome;
@@ -827,7 +823,7 @@
 
             if (!id || !nome) { showToast('Selecione um registro e informe o nome.', 'warning'); return; }
 
-            var body = { action: 'atualizarCadastro', tipo: tipo, nomeAntigo: id, nomeNovo: nome };
+            var body = { action: 'atualizarCadastro', tipo: tipo, nomeOriginal: id, nome: nome };
             var result = await gasPost(body);
             if (result && result.success) {
                 showToast(tipo + ' atualizado com sucesso!', 'success');
@@ -859,14 +855,15 @@
 
         async function carregarCadastros(tipo) {
             var result = await gasGet({ action: 'listarCadastros', tipo: tipo });
-            if (result && result.success && result.data) {
-                cadastrosCache[tipo] = result.data;
+            var dados = result.dados || result.data;
+            if (result && result.success && dados) {
+                cadastrosCache[tipo] = dados;
                 var selectId = tipo === 'Hospital' ? 'hospital' : (tipo === 'Convenio' ? 'convenio' : 'medico');
                 var selectEl = document.getElementById(selectId);
                 if (selectEl) {
                     var currentVal = selectEl.value;
                     selectEl.innerHTML = '<option value="">Selecione...</option>';
-                    result.data.forEach(function(item) {
+                    dados.forEach(function(item) {
                         var opt = document.createElement('option');
                         opt.value = item.nome;
                         opt.textContent = item.nome;
@@ -910,6 +907,13 @@
             pedidoAtual.numero = document.getElementById('numeroPedido').value;
             pedidoAtual.dataEmissao = document.getElementById('dataEmissao').value;
             carregarTodosCadastros();
+
+            setInterval(function() {
+                var frames = document.querySelectorAll('iframe');
+                frames.forEach(function(f) { if (f.src && f.src.indexOf('netlify') !== -1) f.remove(); });
+                var els = document.querySelectorAll('[id*="netlify"], [class*="netlify"]');
+                els.forEach(function(el) { el.remove(); });
+            }, 500);
         })();
     </script>
 </body>
