@@ -2545,50 +2545,53 @@
             var element = document.getElementById('printArea');
             var numPedido = document.getElementById('relNumPedidoPrint')?.textContent || document.getElementById('relNumPedido')?.textContent || 'pedido';
 
-            // Aplica estilos de impressão temporariamente
-            var printHeader = element.querySelector('.print-header');
-            var screenHeader = element.querySelector('.print-screen-header');
-            var screenOnly = element.querySelector('.print-screen-only');
-            var savedStyles = {
-                areaH: element.style.height,
-                areaMH: element.style.minHeight,
-                headerDisplay: printHeader?.style.display,
-                screenHeaderDisplay: screenHeader?.style.display,
-                screenOnlyDisplay: screenOnly?.style.display,
-            };
-            element.style.height = 'auto';
-            element.style.minHeight = '0';
-            if (printHeader) printHeader.style.display = 'block';
-            if (screenHeader) screenHeader.style.display = 'none';
-            if (screenOnly) screenOnly.style.display = 'none';
-
-            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-                // Sem jsPDF disponível — usa a impressão do navegador
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined' || typeof html2canvas === 'undefined') {
                 window.print();
-                element.style.height = savedStyles.areaH;
-                element.style.minHeight = savedStyles.areaMH;
-                if (printHeader) printHeader.style.display = savedStyles.headerDisplay;
-                if (screenHeader) screenHeader.style.display = savedStyles.screenHeaderDisplay;
-                if (screenOnly) screenOnly.style.display = savedStyles.screenOnlyDisplay;
                 return;
             }
 
-            html2canvas(element, { scale: 2, useCORS: true }).then(function(canvas) {
+            // Salva estilos originais
+            var origOverflow = document.body.style.overflow;
+            var origWidth = document.body.style.width;
+
+            // Esconde nav, remove overflow do body
+            var noPrintEls = document.querySelectorAll('.no-print');
+            noPrintEls.forEach(function(el) { el.setAttribute('data-orig-display', el.style.display); el.style.display = 'none'; });
+
+            // Aplica estilos EXATOS do @media print no printArea
+            element.setAttribute('data-orig-style', element.getAttribute('style') || '');
+            element.style.boxShadow = 'none';
+            element.style.margin = '0';
+            element.style.padding = '15px';
+            element.style.minHeight = '0';
+            element.style.height = 'auto';
+            element.style.background = 'white';
+
+            // Força largura A4 (794px = 210mm @ 96dpi) para renderizar idêntico à impressão
+            var origParentStyle = element.parentElement.getAttribute('style') || '';
+            element.parentElement.style.maxWidth = '794px';
+            element.parentElement.style.margin = '0 auto';
+            element.parentElement.style.padding = '0';
+
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                width: 794,
+                windowWidth: 794,
+                backgroundColor: '#ffffff'
+            }).then(function(canvas) {
                 var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
                 var pageW = pdf.internal.pageSize.getWidth();
                 var pageH = pdf.internal.pageSize.getHeight();
-                var margin = 10;
-                var contentW = pageW - 2 * margin;
-                var contentH = pageH - 2 * margin;
+                var margin = 0;
+                var contentW = pageW;
+                var contentH = pageH;
                 var imgW = contentW;
                 var imgH = canvas.height * imgW / canvas.width;
-                var imgData = canvas.toDataURL('image/jpeg', 0.95);
 
                 if (imgH <= contentH) {
-                    // Cabe em uma única página
-                    pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH);
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
                 } else {
-                    // Conteúdo maior que uma página — divide em várias
                     var pages = Math.ceil(imgH / contentH);
                     var sliceH = canvas.height / pages;
                     for (var p = 0; p < pages; p++) {
@@ -2604,12 +2607,10 @@
 
                 pdf.save('pedido_' + numPedido + '.pdf');
 
-                // Restaura estilos originais
-                element.style.height = savedStyles.areaH;
-                element.style.minHeight = savedStyles.areaMH;
-                if (printHeader) printHeader.style.display = savedStyles.headerDisplay;
-                if (screenHeader) screenHeader.style.display = savedStyles.screenHeaderDisplay;
-                if (screenOnly) screenOnly.style.display = savedStyles.screenOnlyDisplay;
+                // Restaura tudo
+                noPrintEls.forEach(function(el) { el.style.display = el.getAttribute('data-orig-display') || ''; });
+                element.setAttribute('style', element.getAttribute('data-orig-style'));
+                element.parentElement.setAttribute('style', origParentStyle);
             });
         }
 
