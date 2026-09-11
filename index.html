@@ -2561,16 +2561,37 @@
             if (screenHeader) screenHeader.style.display = 'none';
             if (screenOnly) screenOnly.style.display = 'none';
 
-            var opt = {
-                margin: [10, 0, 10, 0],
-                filename: 'pedido_' + numPedido + '.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+            html2canvas(element, { scale: 2, useCORS: true }).then(function(canvas) {
+                var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                var pageW = pdf.internal.pageSize.getWidth();
+                var pageH = pdf.internal.pageSize.getHeight();
+                var margin = 10;
+                var contentW = pageW - 2 * margin;
+                var contentH = pageH - 2 * margin;
+                var imgW = contentW;
+                var imgH = canvas.height * imgW / canvas.width;
+                var imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-            html2pdf().set(opt).from(element).save().then(function() {
+                if (imgH <= contentH) {
+                    // Cabe em uma única página
+                    pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH);
+                } else {
+                    // Conteúdo maior que uma página — divide em várias
+                    var pages = Math.ceil(imgH / contentH);
+                    var sliceH = canvas.height / pages;
+                    for (var p = 0; p < pages; p++) {
+                        if (p > 0) pdf.addPage();
+                        var temp = document.createElement('canvas');
+                        temp.width = canvas.width;
+                        temp.height = Math.ceil(sliceH);
+                        var ctx = temp.getContext('2d');
+                        ctx.drawImage(canvas, 0, Math.floor(p * sliceH), canvas.width, Math.ceil(sliceH), 0, 0, canvas.width, Math.ceil(sliceH));
+                        pdf.addImage(temp.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, contentH);
+                    }
+                }
+
+                pdf.save('pedido_' + numPedido + '.pdf');
+
                 // Restaura estilos originais
                 element.style.height = savedStyles.areaH;
                 element.style.minHeight = savedStyles.areaMH;
