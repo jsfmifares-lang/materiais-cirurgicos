@@ -2591,6 +2591,9 @@
 
                 if (imgH <= contentH) {
                     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, imgH);
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(156, 163, 175);
+                    pdf.text('Página 1 de 1', pageW / 2, pageH - 3, { align: 'center' });
                 } else {
                     var pages = Math.ceil(imgH / contentH);
                     var sliceH = canvas.height / pages;
@@ -2602,6 +2605,9 @@
                         var ctx = temp.getContext('2d');
                         ctx.drawImage(canvas, 0, Math.floor(p * sliceH), canvas.width, Math.ceil(sliceH), 0, 0, canvas.width, Math.ceil(sliceH));
                         pdf.addImage(temp.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, imgW, contentH);
+                        pdf.setFontSize(9);
+                        pdf.setTextColor(156, 163, 175);
+                        pdf.text('Página ' + (p + 1) + ' de ' + pages, pageW / 2, pageH - 3, { align: 'center' });
                     }
                 }
 
