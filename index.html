@@ -1,9 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Entrega - Materiais Cirurgicos</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Controle de Entrega - Materiais Cirurgicos v2.1</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,16 +32,29 @@
         .nav-btn { transition: all 0.2s ease; }
         .nav-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .nav-btn.active { background-color: #1d4ed8 !important; color: white !important; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        select option[value=""] { color: #9ca3af; }
+        select.placeholder-active { color: #9ca3af !important; }
+        input[type="date"].placeholder-active { color: #9ca3af !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
+        input[type="date"]:focus::-webkit-calendar-picker-indicator { opacity: 1; }
+        .placeholder-gray::placeholder { color: #9ca3af; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .modal-overlay { background-color: rgba(0,0,0,0.5); }
+        .print-header { display: none; }
         .toast { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
         @media print {
             .no-print { display: none !important; }
-            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; }
+            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; min-height: 0 !important; height: auto !important; }
             body { background: white !important; }
+            .print-footer-sig { page-break-inside: avoid !important; break-inside: avoid !important; background: white !important; padding: 15px 40px !important; }
+            .print-content { page-break-inside: avoid !important; break-inside: avoid !important; }
+            #tabelaRelatório thead { display: table-header-group !important; }
+            #screenC { page-break-after: avoid !important; }
         }
+        @page { size: A4; margin: 10mm; @bottom-center { content: ""; } }
     </style>
     <style>.netlify-badge, [class*="netlify"], [id*="netlify"]{display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important;position:fixed!important;bottom:-100px!important;z-index:-9999!important}</style>
 </head>
@@ -52,9 +68,30 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             <span class="font-bold text-gray-800 text-sm">Entrega Materiais</span>
             <div class="ml-auto flex gap-2">
-                <button id="navA" class="nav-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-600 text-white" onclick="showScreen('A')">Pedido</button>
-                <button id="navB" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600" onclick="showScreen('B')">Lancamentos</button>
-                <button id="navC" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600" onclick="showScreen('C')">Relatorio</button>
+                <button id="navA" class="nav-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500 text-white" onclick="showScreen('A')">Pedido</button>
+                <button id="navB" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600" onclick="avancarParaLançamentos()" disabled>Lançamentos</button>
+                <div id="navImpressaoBtns" class="hidden flex gap-1">
+                    <button onclick="novoPedido()" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-primary-600 hover:text-white transition" title="Novo Pedido">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Novo Pedido
+                    </button>
+                    <button onclick="abrirPesquisaPedido()" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-primary-600 hover:text-white transition" title="Pesquisar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Pesquisar
+                    </button>
+                    <button onclick="editarPedidoAtual()" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-primary-600 hover:text-white transition" title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Editar
+                    </button>
+                    <button onclick="imprimirRelatorio()" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-primary-600 hover:text-white transition" title="Imprimir">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Impressão
+                    </button>
+                    <button onclick="baixarPDF()" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 hover:bg-primary-600 hover:text-white transition" title="Baixar PDF">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Baixar PDF
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -72,8 +109,8 @@
                     <input type="text" id="numeroPedido" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm font-mono w-40">
                 </div>
                 <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium">Responsavel:</label>
-                    <input type="text" id="responsavel" class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm w-48 placeholder-white/60" placeholder="Nome">
+                    <label class="text-sm font-medium">Responsável:</label>
+                    <input type="text" id="responsavel" value="Hérica Freire" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm w-48 placeholder-white/60">
                 </div>
                 <div class="flex items-center gap-2">
                     <label class="text-sm font-medium">Emissao:</label>
@@ -82,269 +119,273 @@
             </div>
         </div>
 
-        <div class="max-w-6xl mx-auto p-6 flex gap-6">
+        <div class="max-w-6xl mx-auto p-6 pl-16">
             <!-- Main Form -->
-            <div class="flex-1 bg-white rounded-xl shadow-md p-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     Dados do Pedido
                 </h2>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital *</label>
-                        <select id="hospital" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital</label>
+                        <select id="hospital" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Medico</label>
-                        <select id="medico" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Médico</label>
+                        <select id="medico" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Convenio</label>
-                        <select id="convenio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Convênio</label>
+                        <select id="convenio" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
-                        <input type="text" id="paciente" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" placeholder="Nome do paciente">
+                        <input type="text" id="paciente" oninput="verificarCamposPreenchidos()" class="placeholder-gray w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" placeholder="Nome do paciente">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Data Cirurgia</label>
-                        <input type="date" id="dataCirurgia" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <input type="date" id="dataCirurgia" onclick="this.showPicker()" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Side Panel -->
-            <div class="w-64 flex flex-col gap-2.5">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Cadastros</h3>
-                <button onclick="openCadastroModal('Hospital')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    Cadastrar Hospital
-                </button>
-                <button onclick="openCadastroModal('Convenio')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    Cadastrar Convenio
-                </button>
-                <button onclick="openCadastroModal('Medico')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    Cadastrar Medico
-                </button>
-                <hr class="my-1 border-gray-200">
-                <button onclick="openEditarCadastroModal('Hospital')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Editar Hospital
-                </button>
-                <button onclick="openEditarCadastroModal('Convenio')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Editar Convenio
-                </button>
-                <button onclick="openEditarCadastroModal('Medico')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Editar Medico
-                </button>
-                <hr class="my-1 border-gray-200">
-                <button onclick="openNovoImplanteModal()" class="flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                    Novo Implante
-                </button>
-                <button onclick="avancarParaLancamentos()" class="flex items-center gap-2 bg-success-500 hover:bg-success-600 text-white font-semibold py-3 px-3 rounded-lg text-sm transition mt-2 shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                    Avancar para Lancamentos
-                </button>
-            </div>
+    <!-- ==================== SIDEBAR ==================== -->
+    <div id="sidebar" class="fixed top-0 left-0 h-full bg-white shadow-lg border-r border-gray-200 z-50 transition-all duration-300" style="width:56px" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()">
+        <div class="flex items-center justify-center h-12 border-b border-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </div>
+        <div id="sidebarMenu" class="hidden flex-col gap-1 p-3 overflow-y-auto" style="max-height:calc(100vh - 48px)">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1 mb-1">Cadastrar</p>
+            <button onclick="openCadastroModal('Hospital')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Hospital
+            </button>
+            <button onclick="openCadastroModal('Convênio')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Convênio
+            </button>
+            <button onclick="openCadastroModal('Médico')" class="flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Médico
+            </button>
+            <hr class="my-1 border-gray-200">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1 mb-1">Editar</p>
+            <button onclick="openEditarCadastroModal('Hospital')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Hospital
+            </button>
+            <button onclick="openEditarCadastroModal('Convênio')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Convênio
+            </button>
+            <button onclick="openEditarCadastroModal('Médico')" class="flex items-center gap-2 bg-danger-400 hover:bg-danger-500 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Médico
+            </button>
+            <hr class="my-1 border-gray-200">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1 mb-1">Pedido</p>
+            <button onclick="abrirPesquisaPedido()" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 rounded-lg text-xs transition whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Pesquisar
+            </button>
+            <button onclick="avancarParaLançamentos()" class="flex items-center gap-2 bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 px-3 rounded-lg text-xs transition mt-1 shadow-md whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                Avançar
+            </button>
         </div>
     </div>
 
     <!-- ==================== SCREEN B ==================== -->
     <div id="screenB" class="screen hidden">
-        <div class="bg-white border-b border-gray-200 p-3 shadow-sm">
-            <div class="max-w-6xl mx-auto flex items-center gap-6 text-sm text-gray-600">
-                <span class="font-semibold text-gray-800">Pedido: <span id="infoPedidoNum" class="text-primary-600">-</span></span>
-                <span>Hospital: <span id="infoPedidoHospital" class="text-gray-800">-</span></span>
-                <span>Itens: <span id="infoPedidoQtdItens" class="inline-flex items-center justify-center bg-primary-600 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span></span>
+        <!-- Header Azul -->
+        <div class="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-3 shadow-lg">
+            <div class="max-w-6xl mx-auto flex items-center justify-between">
+                <h1 class="text-lg font-bold">Endocenter – Material Cirúrgico Hospitalar</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm">Pedido N° <span id="infoPedidoNum" class="font-mono bg-white/20 px-2 py-0.5 rounded">-</span></span>
+                    <button id="btnSalvarImprimir" onclick="salvarEImprimir()" title="Salvar e Imprimir" class="hover:bg-white/20 p-1.5 rounded transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    </button>
+                    <button onclick="limparPedido()" title="Limpar Pedido" class="hover:bg-white/20 p-1.5 rounded transition text-danger-300 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="max-w-6xl mx-auto p-6 flex gap-6">
-            <!-- Left Column: Scanner -->
-            <div class="w-96 flex flex-col gap-4">
-                <div class="bg-white rounded-xl shadow-md p-5">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                        Escanear Material
-                    </h3>
-                    <div class="flex gap-2">
-                        <input type="text" id="inputCodigo"
-                            class="flex-1 border-2 border-success-500 rounded-lg px-4 py-3 text-lg font-mono focus:ring-2 focus:ring-success-400 outline-none uppercase"
-                            placeholder="Codigo de barras..."
-                            onkeydown="if(event.key==='Enter'){event.preventDefault();buscarMaterial();}">
-                        <button onclick="buscarMaterial()" class="bg-success-500 hover:bg-success-600 text-white font-semibold px-4 rounded-lg transition">
-                            Buscar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Result Found -->
-                <div id="resultadoBusca" class="bg-success-50 border border-success-400 rounded-xl p-4 hidden">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span class="font-semibold text-success-600 text-sm">Material Encontrado</span>
-                    </div>
-                    <div class="text-sm space-y-1">
-                        <p><span class="font-medium text-gray-600">Descricao:</span> <span id="resDescricao" class="text-gray-800">-</span></p>
-                        <p><span class="font-medium text-gray-600">Referencia:</span> <span id="resReferencia" class="text-gray-800">-</span></p>
-                        <p><span class="font-medium text-gray-600">ANVISA:</span> <span id="resAnvisa" class="text-gray-800">-</span></p>
-                    </div>
-                </div>
-
-                <!-- Result Not Found -->
-                <div id="resultadoNaoEncontrado" class="bg-danger-50 border border-danger-400 rounded-xl p-4 hidden">
-                    <div class="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-danger-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span class="font-semibold text-danger-600 text-sm">Material nao encontrado. Cadastre um novo implante.</span>
-                    </div>
-                </div>
-
-                <!-- Additional Fields -->
-                <div id="camposAdicionais" class="bg-white rounded-xl shadow-md p-5 hidden">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Dados do Item</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Quantidade *</label>
-                            <input type="number" id="itemQtd" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Lote</label>
-                            <input type="text" id="itemLote" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" placeholder="Numero do lote">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Validade</label>
-                            <input type="date" id="itemValidade" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
-                        </div>
-                        <button onclick="adicionarItem()" class="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                            Adicionar ao Pedido
-                        </button>
-                    </div>
-                </div>
+        <!-- Inputs -->
+        <div class="max-w-6xl mx-auto p-4 space-y-3">
+            <!-- Código Barras -->
+            <div class="flex items-center gap-3">
+                <input type="text" id="inputCódigo"
+                    class="flex-1 border-2 border-primary-400 rounded px-4 py-2.5 text-base font-mono focus:ring-2 focus:ring-primary-400 outline-none uppercase bg-white"
+                    placeholder="Código Barras"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();buscarMaterial();}">
+                <button onclick="openModalInserirManual()" class="bg-accent-500 hover:bg-accent-600 text-white font-semibold py-2.5 px-4 rounded text-sm transition whitespace-nowrap flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Inserir Manual
+                </button>
             </div>
 
-            <!-- Right Column: Items Table -->
-            <div class="flex-1 bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
-                <div class="bg-success-500 text-white px-4 py-2.5 flex items-center justify-between">
-                    <h3 class="font-semibold text-sm flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                        Itens do Pedido
-                    </h3>
-                    <span id="totalItensBadge" class="bg-white/20 text-white text-xs font-bold rounded-full px-2.5 py-0.5">0</span>
+            <!-- Material + Qtd + Contador -->
+            <div class="flex items-center gap-3">
+                <input type="text" id="itemDescrição" disabled
+                    class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-400 cursor-not-allowed"
+                    placeholder="Material">
+                <div id="itemQtdWrap" class="w-20 shrink-0 rounded border-2 border-gray-300 bg-gray-100 overflow-hidden">
+                    <select id="itemQtd" disabled class="w-full border-0 bg-transparent px-2 py-2 text-sm text-gray-400 cursor-not-allowed text-center focus:outline-none">
+                        <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
                 </div>
-                <div class="overflow-auto flex-1">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 text-gray-600 text-xs uppercase sticky top-0">
-                            <tr>
-                                <th class="px-3 py-2 text-left">#</th>
-                                <th class="px-3 py-2 text-left">Codigo</th>
-                                <th class="px-3 py-2 text-left">Descricao</th>
-                                <th class="px-3 py-2 text-center">Qtd</th>
-                                <th class="px-3 py-2 text-left">Lote</th>
-                                <th class="px-3 py-2 text-left">Validade</th>
-                                <th class="px-3 py-2 text-left">ANVISA</th>
-                                <th class="px-3 py-2 text-center">Acao</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelaItens" class="divide-y divide-gray-100">
-                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm">Nenhum item adicionado</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
-                    <div class="flex items-center gap-2 text-sm text-gray-600">
-                        Total de itens: <span id="totalItensLabel" class="font-bold text-gray-800">0</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="salvarPedido()" class="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                            Salvar Pedido
-                        </button>
-                        <button onclick="gerarRelatorio()" class="bg-accent-400 hover:bg-accent-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                            Gerar Relatorio
-                        </button>
-                    </div>
-                </div>
+                <span class="text-sm font-semibold text-primary-600 ml-auto">Inseridos: <span id="totalItensLabel">0</span></span>
+            </div>
+
+            <!-- Campos ocultos para lote/validade (preenchidos automaticamente) -->
+            <input type="hidden" id="itemLote">
+            <input type="hidden" id="itemValidade">
+        </div>
+
+        <!-- Tabela de Itens -->
+        <div class="max-w-6xl mx-auto px-4 pb-4">
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table class="w-full text-sm" style="table-layout:fixed">
+                    <thead class="bg-success-500 text-white text-xs">
+                        <tr>
+                            <th class="px-3 py-2 text-left" style="width:50px">SEQ</th>
+                            <th class="px-3 py-2 text-left">Material</th>
+                            <th class="px-3 py-2 text-center" style="width:50px">QTD</th>
+                            <th class="px-3 py-2 text-left" style="width:120px">LOTE</th>
+                            <th class="px-3 py-2 text-left" style="width:100px">VALIDADE</th>
+                            <th class="px-3 py-2 text-left" style="width:120px">ANVISA</th>
+                            <th class="px-3 py-2 text-center" style="width:70px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaItens" class="divide-y divide-gray-100">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 text-sm">Nenhum item adicionado</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <!-- ==================== SCREEN C ==================== -->
     <div id="screenC" class="screen hidden">
-        <div class="no-print bg-white border-b border-gray-200 p-3 shadow-sm">
-            <div class="max-w-4xl mx-auto flex items-center justify-between">
-                <button onclick="showScreen('B')" class="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm font-medium transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Voltar
-                </button>
-                <button onclick="window.print()" class="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Imprimir
-                </button>
-            </div>
-        </div>
 
         <div class="max-w-4xl mx-auto p-6">
-            <div id="printArea" class="print-area bg-white rounded-xl shadow-lg p-8 min-h-[1122px]">
-                <!-- Header -->
-                <div class="flex justify-between items-start mb-6">
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg w-32 h-20 flex items-center justify-center text-gray-400 text-xs text-center">
-                        Logo
+            <div id="printArea" class="print-area bg-white rounded-xl shadow-lg p-8 relative flex flex-col">
+                <!-- Print-only header (repeats on each page) -->
+                <div class="print-header">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-3">
+                            <div id="relLogoContainerPrint" class="flex items-center gap-3">
+                                <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4 4 L20 4 L20 22 L4 44 L4 4Z" fill="#1a56db"/>
+                                    <path d="M28 4 L44 4 L44 44 L28 22 L28 4Z" fill="#eab308"/>
+                                    <path d="M20 4 L28 4 L28 22 L20 22 Z" fill="#1a56db"/>
+                                </svg>
+                                <img id="relLogoImgPrint" class="hidden h-10 w-auto object-contain" alt="Logo">
+                            </div>
+                            <div>
+                                <p class="text-lg font-extrabold text-gray-800 leading-tight" style="letter-spacing:-0.5px">endocenter</p>
+                                <p class="text-[8px] text-gray-500 uppercase tracking-widest font-medium">Material Cirúrgico Hospitalar</p>
+                            </div>
+                        </div>
+                        <div class="text-right text-xs text-gray-600 space-y-0.5">
+                            <p>Alagoas, <span id="relDataEmissaoPrint" class="font-semibold">-</span></p>
+                            <p>Nº do pedido: <span id="relNumPedidoPrint" class="font-semibold">-</span></p>
+                            <p>Responsável: <span id="relResponsávelPrint" class="font-semibold">-</span></p>
+                        </div>
                     </div>
-                    <div class="text-right text-sm text-gray-600 space-y-1">
-                        <p>Emissao: <span id="relDataEmissao" class="font-semibold text-gray-800">-</span></p>
-                        <p>Pedido: <span id="relNumPedido" class="font-semibold text-primary-600">-</span></p>
-                        <p>Responsavel: <span id="relResponsavel" class="font-semibold text-gray-800">-</span></p>
+                    <h1 class="text-center text-sm font-bold text-primary-700 uppercase tracking-wide">Controle de Entrega de Mercadorias</h1>
+                    <hr class="border-gray-300 my-2">
+                    <div class="mb-3 text-xs space-y-0.5">
+                        <p><span class="font-bold">Cliente:</span> <span id="relHospitalPrint">-</span></p>
+                        <p><span class="font-bold">Convênio:</span> <span id="relConvênioPrint">-</span></p>
+                        <p><span class="font-bold">Médico(a):</span> <span id="relMédicoPrint">-</span></p>
+                        <p><span class="font-bold">Paciente:</span> <span id="relPacientePrint">-</span></p>
+                        <p><span class="font-bold">Data Cirurgia:</span> <span id="relDataCirurgiaPrint">-</span></p>
                     </div>
                 </div>
 
+                <div class="print-content flex-1 flex flex-col">
+                <!-- Header (visible only on screen, hidden in print) -->
+                <div class="print-screen-header flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="relLogoContainer" class="flex items-center gap-3">
+                            <svg id="relLogoSvg" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4 L20 4 L20 22 L4 44 L4 4Z" fill="#1a56db"/>
+                                <path d="M28 4 L44 4 L44 44 L28 22 L28 4Z" fill="#eab308"/>
+                                <path d="M20 4 L28 4 L28 22 L20 22 Z" fill="#1a56db"/>
+                            </svg>
+                            <img id="relLogoImg" class="hidden h-12 w-auto object-contain" alt="Logo">
+                        </div>
+                        <div id="relTextoLogo">
+                            <p class="text-2xl font-extrabold text-gray-800 leading-tight" style="letter-spacing:-0.5px">endocenter</p>
+                            <p class="text-[9px] text-gray-500 uppercase tracking-widest font-medium">Material Cirúrgico Hospitalar</p>
+                        </div>
+                    </div>
+                    <div class="text-right text-sm text-gray-600 space-y-1">
+                        <p>Alagoas, <span id="relDataEmissao" class="font-semibold text-gray-800">-</span></p>
+                        <p>Nº do pedido: <span id="relNumPedido" class="font-semibold text-primary-600">-</span></p>
+                        <p>Responsável: <span id="relResponsável" class="font-semibold text-gray-800">-</span></p>
+                    </div>
+                </div>
+
+                <div class="print-body flex-1">
+                <div class="print-screen-only">
+                <h1 class="text-center text-lg font-bold text-primary-700 mb-4 uppercase tracking-wide">Controle de Entrega de Mercadorias</h1>
                 <hr class="border-gray-300 mb-4">
-
-                <h1 class="text-center text-lg font-bold text-gray-800 mb-5 uppercase tracking-wide">Controle de Entrega de Mercadorias</h1>
-
-                <!-- Info Grid -->
-                <div class="grid grid-cols-2 gap-x-8 gap-y-2 mb-6 text-sm bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div><span class="font-semibold text-gray-600">Hospital:</span> <span id="relHospital" class="text-gray-800">-</span></div>
-                    <div><span class="font-semibold text-gray-600">Convenio:</span> <span id="relConvenio" class="text-gray-800">-</span></div>
-                    <div><span class="font-semibold text-gray-600">Medico:</span> <span id="relMedico" class="text-gray-800">-</span></div>
-                    <div><span class="font-semibold text-gray-600">Paciente:</span> <span id="relPaciente" class="text-gray-800">-</span></div>
-                    <div><span class="font-semibold text-gray-600">Data Cirurgia:</span> <span id="relDataCirurgia" class="text-gray-800">-</span></div>
+                <div class="mb-6 text-sm space-y-1.5">
+                    <p><span class="font-bold text-gray-800">Cliente:</span> <span id="relHospital" class="text-gray-800">-</span></p>
+                    <p><span class="font-bold text-gray-800">Convênio:</span> <span id="relConvênio" class="text-gray-800">-</span></p>
+                    <p><span class="font-bold text-gray-800">Médico(a):</span> <span id="relMédico" class="text-gray-800">-</span></p>
+                    <p><span class="font-bold text-gray-800">Paciente:</span> <span id="relPaciente" class="text-gray-800">-</span></p>
+                    <p><span class="font-bold text-gray-800">Data Cirurgia:</span> <span id="relDataCirurgia" class="text-gray-800">-</span></p>
+                </div>
                 </div>
 
                 <!-- Items Table -->
-                <table class="w-full text-sm border border-gray-300 mb-8">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Seq</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Descricao</th>
-                            <th class="border border-gray-300 px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Qtd</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Lote</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Validade</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">ANVISA</th>
+                <table class="w-full text-sm mb-8" style="table-layout:fixed">
+                    <thead>
+                        <tr class="border-t-2 border-b border-gray-300">
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase" style="width:50px">Seq</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Descrição do material</th>
+                            <th class="px-2 py-2 text-center text-xs font-semibold text-gray-600 uppercase" style="width:50px">Qtd</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase" style="width:130px">Lote</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase" style="width:100px">Validade</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase" style="width:120px">Anvisa</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaRelatorio">
-                        <tr><td colspan="6" class="border border-gray-300 px-3 py-4 text-center text-gray-400">Nenhum item</td></tr>
+                    <tbody id="tabelaRelatório" class="divide-y divide-gray-200">
+                        <tr><td colspan="6" class="px-3 py-4 text-center text-gray-400">Nenhum item</td></tr>
                     </tbody>
                 </table>
+                </div><!-- /print-body -->
 
                 <!-- Signatures -->
-                <div class="flex justify-between mt-16 px-8">
+                <div class="print-footer-sig border border-gray-300 rounded-lg py-8 px-10 flex justify-between items-end mt-auto mx-6">
                     <div class="text-center">
                         <div class="w-56 border-t border-gray-400 mb-2"></div>
                         <p class="text-sm font-medium text-gray-600">Recebido por</p>
                     </div>
                     <div class="text-center">
-                        <div class="w-56 border-t border-gray-400 mb-2"></div>
-                        <p class="text-sm font-medium text-gray-600">Entregue por</p>
+                        <div class="flex items-end justify-center gap-0 mb-2">
+                            <div class="w-10 border-t border-gray-400"></div>
+                            <span class="text-gray-500 font-medium px-1 mb-0.5">/</span>
+                            <div class="w-10 border-t border-gray-400"></div>
+                            <span class="text-gray-500 font-medium px-1 mb-0.5">/</span>
+                            <div class="w-14 border-t border-gray-400"></div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600">Entregue em</p>
                     </div>
                 </div>
+                </div><!-- /print-content -->
             </div>
         </div>
     </div>
@@ -360,16 +401,20 @@
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Codigo *</label>
-                    <input type="text" id="novoImplCodigo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none font-mono" placeholder="Ex: IMP-001">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Escanear Código de Barras (opcional)</label>
+                    <input type="text" id="novoImplBarcode" class="w-full border-2 border-pink-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none font-mono" placeholder="Escaneie o GS1-128 aqui..." onkeydown="if(event.key==='Enter'){event.preventDefault();parseAndFillNovoImplante();}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descricao *</label>
-                    <input type="text" id="novoImplDescricao" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Nome do implante">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                    <input type="text" id="novoImplCódigo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none font-mono" placeholder="Ex: IMP-001">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Referencia</label>
-                    <input type="text" id="novoImplReferencia" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Fabricante / Marca">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição *</label>
+                    <input type="text" id="novoImplDescrição" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Nome do implante">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Referência</label>
+                    <input type="text" id="novoImplReferência" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Fabricante / Marca">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ANVISA</label>
@@ -380,10 +425,10 @@
                     Salvar Implante
                 </button>
                 <div id="ultimoImplanteCadastrado" class="hidden bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm">
-                    <p class="font-semibold text-pink-700 mb-1">Ultimo implante cadastrado:</p>
-                    <p class="text-gray-600">Codigo: <span id="ultimoImplCodigo" class="font-mono">-</span></p>
-                    <p class="text-gray-600">Descricao: <span id="ultimoImplDescricao">-</span></p>
-                    <p class="text-gray-600">Referencia: <span id="ultimoImplReferencia">-</span></p>
+                    <p class="font-semibold text-pink-700 mb-1">Último implante cadastrado:</p>
+                    <p class="text-gray-600">Código: <span id="ultimoImplCódigo" class="font-mono">-</span></p>
+                    <p class="text-gray-600">Descrição: <span id="ultimoImplDescrição">-</span></p>
+                    <p class="text-gray-600">Referência: <span id="ultimoImplReferência">-</span></p>
                     <p class="text-gray-600">ANVISA: <span id="ultimoImplAnvisa">-</span></p>
                 </div>
             </div>
@@ -446,9 +491,202 @@
         </div>
     </div>
 
+    <!-- ==================== MODAL: INSERIR MANUAL ==================== -->
+    <div id="modalInserirManual" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background-color:rgba(0,0,0,0.5)">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+            <div class="bg-teal-600 text-white px-6 py-4 rounded-t-xl">
+                <h3 class="text-lg font-bold">Inserindo material manualmente</h3>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="relative">
+                    <input type="text" id="manualReferência" data-ref="input"
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-400 outline-none"
+                        placeholder="Referência"
+                        autocomplete="off"
+                        oninput=" clearTimeout(window._manualTimer); window._manualTimer = setTimeout(function(){ buscarReferenciaAutocomplete(); }, 300); "
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();clearTimeout(window._manualTimer);selecionarReferenciaAutocomplete();}"
+                        onfocus="buscarReferenciaAutocomplete();"
+                        onblur="setTimeout(function(){ document.getElementById('manualAutocomplete').classList.add('hidden'); }, 200);">
+                    <div id="manualAutocomplete" class="hidden absolute z-[70] w-full bg-white border border-gray-300 rounded mt-1 max-h-40 overflow-y-auto shadow-lg text-sm"></div>
+                    <p id="manualErro" class="text-danger-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div>
+                    <input type="text" id="manualDescrição" readonly
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 text-gray-600"
+                        placeholder="Material">
+                </div>
+                <div class="grid grid-cols-12 gap-2 items-end">
+                    <div class="col-span-4">
+                        <label class="block text-xs text-gray-500 mb-1">Lote-SN</label>
+                        <input type="text" id="manualLote"
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
+                            placeholder="Lote-SN" maxlength="12">
+                    </div>
+                    <div class="col-span-3">
+                        <label class="block text-xs text-gray-500 mb-1">Validade</label>
+                        <input type="text" id="manualValidade"
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
+                            placeholder="DD/MM/AAAA" maxlength="10"
+                            oninput="this.value=mascaraDataCurta(this.value); this.dispatchEvent(new Event('change'));"
+                            onchange="var v=this.value; if(v.length===10){var p=v.split('/'); aplicarEstadoValidade(validarValidade(p[0],p[1],p[2]));} else { aplicarEstadoValidade(false); }">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-xs text-gray-500 mb-1">Qtd</label>
+                        <select id="manualQtd" disabled class="w-full border border-gray-300 rounded px-2 py-2 text-sm text-center bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div class="col-span-4">
+                        <label class="block text-xs text-gray-500 mb-1">Anvisa</label>
+                        <input type="text" id="manualAnvisa" readonly
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 text-gray-600"
+                            placeholder="Anvisa">
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-4 flex justify-end gap-3">
+                <button onclick="closeModalInserirManual()" class="border-2 border-orange-400 text-orange-500 font-bold py-2 px-6 rounded-lg text-sm hover:bg-orange-50 transition">Cancelar</button>
+                <button id="manualBtnAdicionar" onclick="adicionarManual()" disabled class="border-2 border-success-500 text-success-600 font-bold py-2 px-6 rounded-lg text-sm hover:bg-success-50 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed transition">Inserir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL LOGO ==================== -->
+    <div id="modalLogo" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color:rgba(0,0,0,0.5)">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Logomarca do Relatório
+                </h3>
+                <button onclick="closeModal('modalLogo')" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div id="logoPreviewContainer" class="flex justify-center">
+                    <div class="w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50">
+                        <span id="logoPlaceholderText" class="text-gray-400 text-sm text-center">Nenhuma imagem</span>
+                        <img id="logoPreviewImg" class="hidden max-w-full max-h-full object-contain rounded" alt="Logo">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Selecionar imagem</label>
+                    <input type="file" id="logoFileInput" accept="image/*" onchange="previewLogo(this)" class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                </div>
+            </div>
+            <div class="px-6 pb-4 flex justify-end gap-3">
+                <button onclick="removerLogo()" class="border-2 border-danger-400 text-danger-500 font-bold py-2 px-6 rounded-lg text-sm hover:bg-danger-50 transition">Remover</button>
+                <button onclick="salvarLogo()" class="border-2 border-success-500 text-success-600 font-bold py-2 px-6 rounded-lg text-sm hover:bg-success-50 transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL EDITAR PEDIDO ==================== -->
+    <div id="modalEditarPedido" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color:rgba(0,0,0,0.5)">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-lg font-bold text-gray-800">Editar Pedido</h3>
+                <button onclick="fecharModalEditarPedido()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div><span class="text-gray-500">N. Pedido:</span> <strong id="edPedidoNum"></strong></div>
+                    <div><label class="text-gray-500">Hospital:</label> <select id="edHospital" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
+                    <div><label class="text-gray-500">Medico:</label> <select id="edMedico" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
+                    <div><label class="text-gray-500">Convenio:</label> <select id="edConvenio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
+                    <div><label class="text-gray-500">Paciente:</label> <input type="text" id="edPaciente" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1" placeholder="Nome do paciente"></div>
+                    <div><label class="text-gray-500">Data Cirurgia:</label> <input type="date" id="edDataCirurgia" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"></div>
+                </div>
+
+                <div class="max-w-6xl mx-auto p-4 space-y-3">
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="edInputCodigo"
+                            class="flex-1 border-2 border-primary-400 rounded px-4 py-2.5 text-base font-mono focus:ring-2 focus:ring-primary-400 outline-none uppercase bg-white"
+                            placeholder="Código Barras"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();_edBuscarMaterial();}">
+                        <button onclick="_edOpenModalInserirManual()" class="bg-accent-500 hover:bg-accent-600 text-white font-semibold py-2.5 px-4 rounded text-sm transition whitespace-nowrap flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Inserir Manual
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="edItemDesc" disabled
+                            class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 text-gray-400 cursor-not-allowed"
+                            placeholder="Material">
+                        <div id="edItemQtdWrap" class="w-20 shrink-0 rounded border-2 border-gray-300 bg-gray-100 overflow-hidden">
+                            <select id="edItemQtd" disabled class="w-full border-0 bg-transparent px-2 py-2 text-sm text-gray-400 cursor-not-allowed text-center focus:outline-none">
+                                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                        </div>
+                        <span class="text-sm font-semibold text-primary-600 ml-auto">Inseridos: <span id="edTotalItensLabel">0</span></span>
+                    </div>
+
+                    <input type="hidden" id="edItemLote">
+                    <input type="hidden" id="edItemValidade">
+                    <input type="hidden" id="edItemCodigo">
+                    <input type="hidden" id="edItemRef">
+                    <input type="hidden" id="edItemAnvisa">
+                    <p id="edErro" class="text-danger-500 text-xs mt-1 hidden"></p>
+                </div>
+
+                <div class="border rounded-lg">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-2 text-left text-xs">#</th>
+                                <th class="px-2 py-2 text-left text-xs">Material</th>
+                                <th class="px-2 py-2 text-center text-xs" style="width:60px">Qtd</th>
+                                <th class="px-2 py-2 text-left text-xs" style="width:120px">Lote</th>
+                                <th class="px-2 py-2 text-left text-xs" style="width:110px">Validade</th>
+                                <th class="px-2 py-2 text-left text-xs" style="width:120px">Anvisa</th>
+                                <th class="px-2 py-2 text-center text-xs" style="width:60px">Acao</th>
+                            </tr>
+                        </thead>
+                        <tbody id="edItensBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-3">
+                <button onclick="fecharModalEditarPedido()" class="border-2 border-gray-300 text-gray-600 font-bold py-2 px-6 rounded-lg text-sm hover:bg-gray-100 transition">Cancelar</button>
+                <button onclick="salvarEdicaoPedido()" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-6 rounded-lg text-sm transition">Salvar Alteracoes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL PESQUISAR PEDIDO ==================== -->
+    <div id="modalPesquisarPedido" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background-color:rgba(0,0,0,0.5)">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="bg-blue-600 text-white px-6 py-4 rounded-t-xl flex items-center justify-between">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    Pesquisar Pedido
+                </h3>
+                <button onclick="fecharModalPesquisa()" class="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="relative">
+                    <input type="text" id="pesqInput" autocomplete="off"
+                        class="w-full border-2 border-blue-400 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                        placeholder="Ex.: 1, 2, 3..."
+                        oninput=" clearTimeout(window._pesqTimer); window._pesqTimer = setTimeout(function(){ pesquisarPedidos(); }, 150); "
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();clearTimeout(window._pesqTimer);pesquisarPedidos();}">
+                    <div id="pesqAutocomplete" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg text-sm"></div>
+                </div>
+                <p id="pesqErro" class="text-danger-500 text-xs hidden"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== JAVASCRIPT ==================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
-        window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxINgvlmkWu_954jokaERvA5NzSNclXwRCkAoav8m0yAVmyr_lYP40q4zJtDu28KxXa5Q/exec';
+        window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzInL3tL-yvsVrfw3P8zOeuR7XwoYrwT2yNhceQ0_7dfdw0X88TW7yTim1ZXcjwFwI4/exec';
         var GAS_URL = window.GAS_API_URL || '';
 
         var pedidoAtual = {
@@ -463,15 +701,187 @@
             itens: []
         };
 
-        var cadastrosCache = { Hospital: [], Convenio: [], Medico: [] };
+        var cadastrosCache = { Hospital: [], Convênio: [], Médico: [] };
+        var CACHE_KEYS = {
+            cadastros: 'nfe-scanner:cadastros:v3',
+            materiais: 'nfe-scanner:materiais:v3'
+        };
+        var _cadastrosRefresh = { Hospital: null, Convênio: null, Médico: null };
 
         var materialAtual = null;
+        var aguardandoQtd = false;
+        var salvandoPedido = false;
 
-        function gerarNumeroPedido() {
-            var now = new Date();
-            var y = now.getFullYear();
-            var seq = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
-            return 'PED-' + y + '-' + seq;
+        function parseGS1Barcode(code) {
+            code = code.replace(/[^A-Za-z0-9-]/g, '').trim();
+            var r = { id: '', validade: '', lote: '', sn: '', loteSn: '' };
+
+            if (code.length >= 10 && code.length < 17) {
+                r.id = code.substring(0, 2);
+                var datePart = code.substring(2, 8);
+                var yy = parseInt(datePart.substring(0, 2));
+                var mm = parseInt(datePart.substring(2, 4));
+                var dd = parseInt(datePart.substring(4, 6));
+                if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy >= 18 && yy <= 40) {
+                    r.validade = datePart;
+                }
+                var loteRaw = code.substring(8);
+                if (loteRaw.startsWith('10') || loteRaw.startsWith('21')) {
+                    loteRaw = loteRaw.substring(2);
+                }
+                r.lote = loteRaw;
+                r.loteSn = r.lote;
+                return r;
+            }
+
+            if (code.length < 17) return r;
+
+            if (code.startsWith('01') && code.length >= 40) {
+                r.id = code.substring(0, 16);
+
+                var idx17 = -1;
+                for (var i = 16; i < code.length - 7; i++) {
+                    if (code.substring(i, i + 2) === '17') {
+                        var yy = parseInt(code.substring(i + 2, i + 4));
+                        var mm = parseInt(code.substring(i + 4, i + 6));
+                        var dd = parseInt(code.substring(i + 6, i + 8));
+                        if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yy >= 18 && yy <= 40) {
+                            idx17 = i;
+                            r.validade = code.substring(i + 2, i + 8);
+                            break;
+                        }
+                    }
+                }
+
+                if (idx17 !== -1) {
+                    var blocoAposValidade = code.substring(idx17 + 8);
+                    var idxTraco = blocoAposValidade.indexOf('-');
+                    if (idxTraco !== -1) {
+                        if (idxTraco >= 7) {
+                            r.lote = blocoAposValidade.substring(idxTraco - 7, idxTraco);
+                        } else {
+                            r.lote = blocoAposValidade.substring(0, idxTraco);
+                        }
+                        r.sn = blocoAposValidade.substring(idxTraco + 1, idxTraco + 4).replace(/[^0-9]/g, '');
+                    } else {
+                        var clean = blocoAposValidade;
+                        if (clean.startsWith('21') || clean.startsWith('10')) {
+                            clean = clean.substring(2);
+                        }
+                        r.lote = clean.substring(0, 7);
+                        r.sn = clean.substring(clean.length - 3);
+                    }
+                }
+            } else {
+                r.id = code.substring(0, 17);
+                var rest = code.substring(17);
+
+                var mValidade = rest.match(/17(\d{6})/);
+                if (mValidade) {
+                    var d = mValidade[1];
+                    var yy2 = parseInt(d.substring(0, 2));
+                    var mm2 = parseInt(d.substring(2, 4));
+                    var dd2 = parseInt(d.substring(4, 6));
+                    if (mm2 >= 1 && mm2 <= 12 && dd2 >= 1 && dd2 <= 31 && yy2 >= 18 && yy2 <= 40) {
+                        r.validade = d;
+                    }
+                }
+
+                var cleanRest = rest.replace(/[^0-9]/g, '');
+                if (cleanRest.length >= 10) {
+                    r.lote = cleanRest.substring(0, 7);
+                    r.sn = cleanRest.substring(7, 10);
+                } else if (cleanRest.length >= 3) {
+                    r.lote = cleanRest.substring(0, cleanRest.length - 3);
+                    r.sn = cleanRest.substring(cleanRest.length - 3);
+                } else {
+                    r.lote = cleanRest;
+                }
+            }
+
+            if (r.lote && r.sn) {
+                r.loteSn = r.lote + '-' + r.sn;
+            } else if (r.lote) {
+                r.loteSn = r.lote;
+            } else if (r.sn) {
+                r.loteSn = r.sn;
+            }
+
+            return r;
+        }
+
+        function formatValidadeYYMMDDToDate(yymmdd) {
+            if (!yymmdd || yymmdd.length !== 6) return '';
+            var yy = parseInt(yymmdd.substring(0, 2));
+            var mm = yymmdd.substring(2, 4);
+            var dd = yymmdd.substring(4, 6);
+            var year = yy < 50 ? 2000 + yy : 1900 + yy;
+            return year + '-' + mm + '-' + dd;
+        }
+
+        function parseToISODate(dateStr) {
+            if (!dateStr) return '';
+            if (dateStr instanceof Date) {
+                return String(dateStr.getFullYear()) + '-' + String(dateStr.getMonth() + 1).padStart(2, '0') + '-' + String(dateStr.getDate()).padStart(2, '0');
+            }
+            var s = String(dateStr).trim();
+            if (s.indexOf('T') !== -1) {
+                s = s.split('T')[0];
+            }
+            var match = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (match) return match[1] + '-' + match[2] + '-' + match[3];
+            var parts = s.split('/');
+            if (parts.length === 3 && parts[2].length === 4) {
+                return parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+            return '';
+        }
+
+        function formatDateToBR(dateStr) {
+            if (!dateStr) return '-';
+            if (dateStr instanceof Date) {
+                return String(dateStr.getDate()).padStart(2, '0') + '/' + String(dateStr.getMonth() + 1).padStart(2, '0') + '/' + dateStr.getFullYear();
+            }
+            var s = String(dateStr).trim();
+            if (s.indexOf('/') !== -1 && s.length >= 8 && s.length <= 10) {
+                return s;
+            }
+            if (s.indexOf('T') !== -1) {
+                s = s.split('T')[0];
+            }
+            if (s.length === 10 && s.charAt(4) === '-' && s.charAt(7) === '-') {
+                return s.substring(8, 10) + '/' + s.substring(5, 7) + '/' + s.substring(0, 4);
+            }
+            var match = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                return match[3] + '/' + match[2] + '/' + match[1];
+            }
+            return dateStr || '-';
+        }
+
+        async function gerarNumeroPedido() {
+            try {
+                var result = await gasGet({ action: 'gerarProximoNumero' });
+                if (result && result.success && result.numero) {
+                    return result.numero;
+                }
+            } catch (e) {
+                console.error('gerarProximoNumero error:', e);
+            }
+            try {
+                var result = await gasGet({ action: 'listarPedidos' });
+                var maxNum = 0;
+                if (result && result.success && result.dados) {
+                    for (var i = 0; i < result.dados.length; i++) {
+                        var n = parseInt(String(result.dados[i].numero).replace(/^0+/, ''), 10);
+                        if (!isNaN(n) && n > maxNum) maxNum = n;
+                    }
+                }
+                return String(maxNum + 1).padStart(6, '0');
+            } catch (e2) {
+                console.error('fallback gerarNumero error:', e2);
+            }
+            return '000001';
         }
 
         function formatarDataBR(date) {
@@ -498,6 +908,10 @@
             document.getElementById(id).classList.add('hidden');
         }
 
+        function novoPedido() {
+            window.location.reload();
+        }
+
         function showScreen(screen) {
             document.getElementById('screenA').classList.add('hidden');
             document.getElementById('screenB').classList.add('hidden');
@@ -509,7 +923,7 @@
             var navBtns = document.querySelectorAll('.nav-btn');
             navBtns.forEach(function(btn) {
                 btn.classList.remove('active');
-                btn.classList.remove('bg-primary-600', 'text-white');
+                btn.classList.remove('bg-green-500', 'text-white', 'bg-primary-600');
                 btn.classList.add('bg-gray-200', 'text-gray-600');
             });
 
@@ -517,16 +931,45 @@
             screenEl.classList.remove('hidden');
             screenEl.classList.add('fade-in');
 
-            var navEl = document.getElementById('nav' + screen);
-            navEl.classList.add('active');
-            navEl.classList.remove('bg-gray-200', 'text-gray-600');
-            navEl.classList.add('bg-primary-600', 'text-white');
+            var sidebar = document.getElementById('sidebar');
+            sidebar.style.display = (screen === 'A' || screen === 'B') ? '' : 'none';
+
+            if (document.getElementById('nav' + screen)) {
+                var navEl = document.getElementById('nav' + screen);
+                navEl.classList.add('active');
+                navEl.classList.remove('bg-gray-200', 'text-gray-600');
+                navEl.classList.add('bg-green-500', 'text-white');
+            }
+
+            if (screen === 'C') {
+                document.getElementById('navA').classList.add('active');
+                document.getElementById('navA').classList.remove('bg-gray-200', 'text-gray-600');
+                document.getElementById('navA').classList.add('bg-green-500', 'text-white');
+            }
+
+            document.getElementById('navImpressaoBtns').classList.toggle('hidden', screen !== 'C');
+            document.getElementById('navA').classList.toggle('hidden', screen === 'C');
+            document.getElementById('navB').classList.toggle('hidden', screen === 'C');
         }
 
-        function avancarParaLancamentos() {
+        var _autoAvancou = false;
+        function verificarCamposPreenchidos() {
+            if (_autoAvancou) return;
+            var h = document.getElementById('hospital').value;
+            var m = document.getElementById('medico').value;
+            var c = document.getElementById('convenio').value;
+            var p = document.getElementById('paciente').value.trim();
+            var d = document.getElementById('dataCirurgia').value;
+            if (h && m && c && p && d) {
+                _autoAvancou = true;
+                setTimeout(function() { avancarParaLançamentos(); }, 200);
+            }
+        }
+
+        function avancarParaLançamentos() {
             var hospital = document.getElementById('hospital').value;
             if (!hospital) {
-                showToast('Selecione um Hospital antes de avancar.', 'warning');
+                showToast('Selecione um Hospital antes de avançar.', 'warning');
                 return;
             }
             pedidoAtual.hospital = hospital;
@@ -538,13 +981,14 @@
             pedidoAtual.numero = document.getElementById('numeroPedido').value;
 
             document.getElementById('infoPedidoNum').textContent = pedidoAtual.numero;
-            document.getElementById('infoPedidoHospital').textContent = hospital;
 
             showScreen('B');
+            _loadRefCache();
+            setTimeout(function() { var el = document.getElementById('inputCódigo'); if (el) el.focus(); }, 300);
         }
 
         async function gasGet(params) {
-            if (!GAS_URL) { showToast('GAS_URL nao configurada. Verifique config.js', 'error'); return null; }
+            if (!GAS_URL) { showToast('GAS_URL não configurada. Verifique config.js', 'error'); return null; }
             try {
                 var qs = Object.keys(params).map(function(k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
                 var resp = await fetch(GAS_URL + '?' + qs);
@@ -557,7 +1001,7 @@
         }
 
         async function gasPost(body) {
-            if (!GAS_URL) { showToast('GAS_URL nao configurada.', 'error'); return null; }
+            if (!GAS_URL) { showToast('GAS_URL não configurada.', 'error'); return null; }
             var send = {};
             Object.keys(body).forEach(function(k) {
                 send[k] = (Array.isArray(body[k])) ? JSON.stringify(body[k]) : body[k];
@@ -565,28 +1009,219 @@
             return await gasGet(send);
         }
 
+        function parseDateBRtoISO(dateBR) {
+            if (!dateBR) return '';
+            var parts = String(dateBR).split('/');
+            if (parts.length === 3) return parts[2] + '-' + parts[1] + '-' + parts[0];
+            return '';
+        }
+
+        function _setQtdState(selectId, wrapId, ativo) {
+            var selectEl = document.getElementById(selectId);
+            var wrapEl = document.getElementById(wrapId);
+            if (!selectEl || !wrapEl) return;
+
+            if (ativo) {
+                wrapEl.classList.remove('border-gray-300', 'bg-gray-100');
+                wrapEl.classList.add('border-red-400', 'bg-white');
+                selectEl.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+                selectEl.classList.add('bg-white', 'text-gray-800');
+            } else {
+                wrapEl.classList.remove('border-red-400', 'bg-white');
+                wrapEl.classList.add('border-gray-300', 'bg-gray-100');
+                selectEl.classList.remove('bg-white', 'text-gray-800');
+                selectEl.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            }
+        }
+
+        function _cacheLerJson(chave, fallback) {
+            try {
+                var raw = localStorage.getItem(chave);
+                if (!raw) return fallback;
+                return JSON.parse(raw);
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function _cacheEscreverJson(chave, valor) {
+            try {
+                localStorage.setItem(chave, JSON.stringify(valor));
+            } catch (e) {}
+        }
+
+        function _tipoSelectIdCadastros(tipo) {
+            return tipo === 'Hospital' ? 'hospital' : (tipo === 'Convênio' ? 'convenio' : 'medico');
+        }
+
+        function _popularSelectCadastros(tipo) {
+            var selectId = _tipoSelectIdCadastros(tipo);
+            var selectEl = document.getElementById(selectId);
+            var dados = cadastrosCache[tipo] || [];
+            if (!selectEl) return;
+
+            var currentVal = selectEl.value;
+            selectEl.innerHTML = '<option value="">Selecione...</option>';
+            dados.forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.nome;
+                opt.textContent = item.nome;
+                selectEl.appendChild(opt);
+            });
+            selectEl.value = currentVal;
+        }
+
+        function _persistirCadastrosCache() {
+            _cacheEscreverJson(CACHE_KEYS.cadastros, cadastrosCache);
+        }
+
+        function _restaurarCadastrosCache() {
+            var saved = _cacheLerJson(CACHE_KEYS.cadastros, null);
+            if (!saved) return;
+            ['Hospital', 'Convênio', 'Médico'].forEach(function(tipo) {
+                if (Array.isArray(saved[tipo])) {
+                    cadastrosCache[tipo] = saved[tipo];
+                }
+            });
+        }
+
+        function _persistirMateriaisCache() {
+            _cacheEscreverJson(CACHE_KEYS.materiais, _refCache || []);
+        }
+
+        function _restaurarMateriaisCache() {
+            var saved = _cacheLerJson(CACHE_KEYS.materiais, null);
+            if (Array.isArray(saved) && saved.length) {
+                _refCache = saved;
+            }
+        }
+
+        async function _refreshCadastrosRemote(tipo) {
+            if (_cadastrosRefresh[tipo]) return _cadastrosRefresh[tipo];
+            _cadastrosRefresh[tipo] = gasGet({ action: 'listarCadastros', tipo: tipo }).then(function(result) {
+                var dados = result && (result.dados || result.data);
+                if (result && result.success && dados) {
+                    cadastrosCache[tipo] = dados;
+                    _persistirCadastrosCache();
+                    _popularSelectCadastros(tipo);
+                }
+                return dados || [];
+            }).catch(function() {
+                return [];
+            }).finally(function() {
+                _cadastrosRefresh[tipo] = null;
+            });
+            return _cadastrosRefresh[tipo];
+        }
+
+        function _textoBusca(valor) {
+            return String(valor || '').trim().toLowerCase();
+        }
+
+        async function _buscarMaterialLocal(codigo, parsed) {
+            var cache = await _loadRefCache();
+            if (!cache || !cache.length) return null;
+
+            var consultaPrincipal = _textoBusca(parsed && parsed.id ? parsed.id : codigo);
+            var consultaBruta = _textoBusca(codigo);
+            var consultas = [];
+            if (consultaPrincipal) consultas.push(consultaPrincipal);
+            if (consultaBruta && consultaBruta !== consultaPrincipal) consultas.push(consultaBruta);
+
+            for (var c = 0; c < consultas.length; c++) {
+                var q = consultas[c];
+
+                for (var i = 0; i < cache.length; i++) {
+                    var m = cache[i];
+                    if (_textoBusca(m.codigo) === q || _textoBusca(m.barcode) === q) {
+                        return m;
+                    }
+                }
+
+                for (var j = 0; j < cache.length; j++) {
+                    var m2 = cache[j];
+                    var codigoMat = _textoBusca(m2.codigo);
+                    var barcodeMat = _textoBusca(m2.barcode);
+                    if ((codigoMat && q.indexOf(codigoMat) === 0) || (barcodeMat && q.indexOf(barcodeMat) === 0)) {
+                        return m2;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         async function buscarMaterial() {
-            var codigo = document.getElementById('inputCodigo').value.trim();
-            if (!codigo) { showToast('Digite um codigo para buscar.', 'warning'); return; }
+            var codigo = document.getElementById('inputCódigo').value.trim();
+            if (!codigo) { showToast('Digite um código para buscar.', 'warning'); return; }
 
-            document.getElementById('resultadoBusca').classList.add('hidden');
-            document.getElementById('resultadoNaoEncontrado').classList.add('hidden');
-            document.getElementById('camposAdicionais').classList.add('hidden');
             materialAtual = null;
+            document.getElementById('itemDescrição').value = '';
 
-            var result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+            var parsed = parseGS1Barcode(codigo);
+            var result = null;
+            var materialLocal = await _buscarMaterialLocal(codigo, parsed);
+
+            if (materialLocal) {
+                result = { success: true, material: materialLocal };
+            } else {
+                var isLongGTIN = codigo.startsWith('01') && codigo.length >= 40;
+                if (isLongGTIN) {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                } else if (parsed.id && parsed.id !== codigo) {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: parsed.id });
+                    if (!result || !result.success) {
+                        result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                    }
+                } else {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                }
+            }
             if (!result) return;
 
-            if (result.success && result.material) {
+            if (result && result.success && result.material) {
                 materialAtual = result.material;
-                document.getElementById('resDescricao').textContent = result.material.descricao || '-';
-                document.getElementById('resReferencia').textContent = result.material.referencia || '-';
-                document.getElementById('resAnvisa').textContent = result.material.anvisa || '-';
-                document.getElementById('resultadoBusca').classList.remove('hidden');
-                document.getElementById('camposAdicionais').classList.remove('hidden');
-                document.getElementById('itemQtd').focus();
+                document.getElementById('itemDescrição').value = result.material.descricao || '';
+
+                if (parsed.loteSn) {
+                    document.getElementById('itemLote').value = parsed.loteSn;
+                } else if (result.material.lote) {
+                    document.getElementById('itemLote').value = result.material.lote;
+                }
+                if (parsed.validade) {
+                    var d = formatValidadeYYMMDDToDate(parsed.validade);
+                    if (d) document.getElementById('itemValidade').value = d;
+                } else if (result.material.validade) {
+                    var d = parseDateBRtoISO(result.material.validade);
+                    if (d) document.getElementById('itemValidade').value = d;
+                }
+
+                if (codigo.length === 16) {
+                    aguardandoQtd = true;
+                    document.getElementById('itemQtd').disabled = false;
+                    _setQtdState('itemQtd', 'itemQtdWrap', true);
+                    document.getElementById('itemQtd').focus();
+                    showToast('Selecione a quantidade para inserir.', 'info');
+                } else {
+                    aguardandoQtd = false;
+                    document.getElementById('itemQtd').disabled = true;
+                    _setQtdState('itemQtd', 'itemQtdWrap', false);
+                    document.getElementById('itemQtd').value = '0';
+                    adicionarItem();
+                }
             } else {
-                document.getElementById('resultadoNaoEncontrado').classList.remove('hidden');
+                if (parsed.validade) {
+                    var d = formatValidadeYYMMDDToDate(parsed.validade);
+                    if (d) document.getElementById('itemValidade').value = d;
+                }
+                if (parsed.loteSn) {
+                    document.getElementById('itemLote').value = parsed.loteSn;
+                }
+                if (parsed.validade || parsed.loteSn) {
+                    showToast('Material não cadastrado. Preencha manualmente.', 'warning');
+                } else {
+                    showToast('Material não encontrado.', 'error');
+                }
             }
         }
 
@@ -604,22 +1239,21 @@
                 anvisa: materialAtual.anvisa,
                 qtd: qtd,
                 lote: lote,
-                validade: validade
+                validade: validade,
+                origem: 'barcode'
             });
 
             renderizarTabela();
 
-            document.getElementById('inputCodigo').value = '';
-            document.getElementById('itemQtd').value = '1';
+            document.getElementById('inputCódigo').value = '';
+            document.getElementById('itemQtd').value = '0';
+            document.getElementById('itemQtd').disabled = true;
+            _setQtdState('itemQtd', 'itemQtdWrap', false);
             document.getElementById('itemLote').value = '';
             document.getElementById('itemValidade').value = '';
-            document.getElementById('resultadoBusca').classList.add('hidden');
-            document.getElementById('resultadoNaoEncontrado').classList.add('hidden');
-            document.getElementById('camposAdicionais').classList.add('hidden');
+            document.getElementById('itemDescrição').value = '';
             materialAtual = null;
-            document.getElementById('inputCodigo').focus();
-
-            showToast('Item adicionado ao pedido!', 'success');
+            document.getElementById('inputCódigo').focus();
         }
 
         function removerItem(index) {
@@ -628,39 +1262,94 @@
             showToast('Item removido.', 'info');
         }
 
+        function editarItem(index) {
+            var item = pedidoAtual.itens[index];
+            if (!item) return;
+            document.getElementById('itemDescrição').value = item.descricao || '';
+            document.getElementById('itemQtd').value = item.qtd || 1;
+            document.getElementById('itemLote').value = item.lote || '';
+            document.getElementById('itemValidade').value = item.validade || '';
+            pedidoAtual.itens.splice(index, 1);
+            renderizarTabela();
+            materialAtual = { codigo: item.codigo, descricao: item.descricao, referencia: item.referencia, anvisa: item.anvisa };
+            document.getElementById('inputCódigo').focus();
+            showToast('Editando item. Ajuste e pressione Enter.', 'info');
+        }
+
+        function limparPedido() {
+            if (pedidoAtual.itens.length === 0) return;
+            if (!confirm('Limpar todos os itens do pedido?')) return;
+            pedidoAtual.itens = [];
+            renderizarTabela();
+            showToast('Pedido limpo.', 'info');
+        }
+
         function renderizarTabela() {
             var tbody = document.getElementById('tabelaItens');
             var count = pedidoAtual.itens.length;
 
             if (count === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm">Nenhum item adicionado</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 text-sm">Nenhum item adicionado</td></tr>';
             } else {
-                tbody.innerHTML = '';
-                pedidoAtual.itens.forEach(function(item, i) {
-                    var row = document.createElement('tr');
-                    row.className = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-                    row.innerHTML =
-                        '<td class="px-3 py-2 text-gray-500">' + (i + 1) + '</td>' +
-                        '<td class="px-3 py-2 font-mono text-gray-800">' + (item.codigo || '') + '</td>' +
-                        '<td class="px-3 py-2 text-gray-800">' + (item.descricao || '') + '</td>' +
-                        '<td class="px-3 py-2 text-center font-semibold">' + item.qtd + '</td>' +
-                        '<td class="px-3 py-2 text-gray-600">' + (item.lote || '-') + '</td>' +
-                        '<td class="px-3 py-2 text-gray-600">' + (item.validade || '-') + '</td>' +
-                        '<td class="px-3 py-2 text-gray-600">' + (item.anvisa || '-') + '</td>' +
-                        '<td class="px-3 py-2 text-center"><button onclick="removerItem(' + i + ')" class="text-danger-400 hover:text-danger-600 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>';
-                    tbody.appendChild(row);
-                });
+                var html = '';
+                for (var i = 0; i < pedidoAtual.itens.length; i++) {
+                    var item = pedidoAtual.itens[i];
+                    html += '<tr class="bg-success-50 hover:bg-success-100 transition">';
+                    html += '<td class="px-3 py-2 font-semibold text-success-700">' + String(i + 1).padStart(2, '0') + '</td>';
+                    html += '<td class="px-3 py-2 text-gray-800" style="word-break:break-word">' + (item.descricao || '') + '</td>';
+                    html += '<td class="px-3 py-2 text-center font-semibold">' + item.qtd + '</td>';
+                    html += '<td class="px-3 py-2 text-gray-600 font-mono text-xs">' + (item.lote || '-') + '</td>';
+                    html += '<td class="px-3 py-2 text-gray-600 text-xs">' + formatDateToBR(item.validade) + '</td>';
+                    html += '<td class="px-3 py-2 text-gray-600 font-mono text-xs">' + (item.anvisa || '-') + '</td>';
+                    html += '<td class="px-3 py-2 text-center whitespace-nowrap">';
+                    html += '<button onclick="editarItem(' + i + ')" class="text-primary-500 hover:text-primary-700 transition mr-1" title="Editar"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>';
+                    html += '<button onclick="removerItem(' + i + ')" class="text-danger-400 hover:text-danger-600 transition" title="Excluir"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>';
+                    html += '</td></tr>';
+                }
+                tbody.innerHTML = html;
             }
 
-            document.getElementById('totalItensBadge').textContent = count;
             document.getElementById('totalItensLabel').textContent = count;
-            document.getElementById('infoPedidoQtdItens').textContent = count;
         }
 
-        async function salvarPedido() {
+        async function salvarEImprimir() {
+            if (salvandoPedido) return;
+            if (!pedidoAtual.hospital) {
+                showToast('Preencha o campo Hospital.', 'warning');
+                return;
+            }
+            if (!pedidoAtual.responsavel) {
+                showToast('Preencha o campo Responsável.', 'warning');
+                return;
+            }
             if (pedidoAtual.itens.length === 0) {
                 showToast('Adicione itens ao pedido antes de salvar.', 'warning');
                 return;
+            }
+            salvandoPedido = true;
+            var btn = document.getElementById('btnSalvarImprimir');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            var salvarPromise = salvarPedido();
+            gerarRelatório();
+            await salvarPromise;
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            salvandoPedido = false;
+        }
+
+        async function salvarPedido() {
+            if (!pedidoAtual.hospital) {
+                showToast('Preencha o campo Hospital.', 'warning');
+                return false;
+            }
+            if (!pedidoAtual.responsavel) {
+                showToast('Preencha o campo Responsável.', 'warning');
+                return false;
+            }
+            if (pedidoAtual.itens.length === 0) {
+                showToast('Adicione itens ao pedido antes de salvar.', 'warning');
+                return false;
             }
             var body = {
                 action: 'salvarPedido',
@@ -676,77 +1365,579 @@
             var result = await gasPost(body);
             if (result && result.success) {
                 showToast('Pedido salvo com sucesso!', 'success');
+                return true;
             } else {
-                showToast('Erro ao salvar pedido.', 'error');
+                showToast(result ? result.mensagem : 'Erro ao salvar o pedido.', 'error');
+                return false;
             }
+            return false;
         }
 
-        function gerarRelatorio() {
-            document.getElementById('relDataEmissao').textContent = document.getElementById('dataEmissao').value;
-            document.getElementById('relNumPedido').textContent = pedidoAtual.numero;
-            document.getElementById('relResponsavel').textContent = pedidoAtual.responsavel || '-';
-            document.getElementById('relHospital').textContent = pedidoAtual.hospital || '-';
-            document.getElementById('relConvenio').textContent = pedidoAtual.convenio || '-';
-            document.getElementById('relMedico').textContent = pedidoAtual.medico || '-';
-            document.getElementById('relPaciente').textContent = pedidoAtual.paciente || '-';
-            document.getElementById('relDataCirurgia').textContent = pedidoAtual.dataCirurgia || '-';
+        function gerarRelatório() {
+            var dias = ['Domingo', 'Segunda-feira', 'Terca-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado'];
+            var meses = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-            var tbody = document.getElementById('tabelaRelatorio');
-            if (pedidoAtual.itens.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="border border-gray-300 px-3 py-4 text-center text-gray-400">Nenhum item</td></tr>';
+            var dataFormatada;
+            var emissao = pedidoAtual.dataEmissao;
+            var dtEmissao = null;
+
+            if (emissao instanceof Date) {
+                dtEmissao = emissao;
+            } else if (emissao && String(emissao).indexOf('/') !== -1) {
+                var parts = String(emissao).split('/');
+                if (parts.length === 3) {
+                    dtEmissao = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+                }
+            } else if (emissao && String(emissao).indexOf('-') !== -1) {
+                var iso = String(emissao).split('T')[0];
+                var p = iso.split('-');
+                if (p.length === 3) {
+                    dtEmissao = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                }
+            }
+
+            if (dtEmissao) {
+                dataFormatada = dias[dtEmissao.getDay()] + ', ' + String(dtEmissao.getDate()).padStart(2, '0') + ' de ' + meses[dtEmissao.getMonth()] + ' de ' + dtEmissao.getFullYear();
             } else {
-                tbody.innerHTML = '';
-                pedidoAtual.itens.forEach(function(item, i) {
-                    var row = document.createElement('tr');
-                    row.className = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-                    row.innerHTML =
-                        '<td class="border border-gray-300 px-3 py-2">' + (i + 1) + '</td>' +
-                        '<td class="border border-gray-300 px-3 py-2">' + (item.descricao || '') + '</td>' +
-                        '<td class="border border-gray-300 px-3 py-2 text-center">' + item.qtd + '</td>' +
-                        '<td class="border border-gray-300 px-3 py-2">' + (item.lote || '-') + '</td>' +
-                        '<td class="border border-gray-300 px-3 py-2">' + (item.validade || '-') + '</td>' +
-                        '<td class="border border-gray-300 px-3 py-2">' + (item.anvisa || '-') + '</td>';
-                    tbody.appendChild(row);
-                });
+                var now = new Date();
+                dataFormatada = dias[now.getDay()] + ', ' + String(now.getDate()).padStart(2, '0') + ' de ' + meses[now.getMonth()] + ' de ' + now.getFullYear();
+            }
+
+            var logoData = localStorage.getItem('logoData');
+            var logoSvg = document.getElementById('relLogoSvg');
+            var logoImg = document.getElementById('relLogoImg');
+            var relTextoLogo = document.getElementById('relTextoLogo');
+            if (logoData) {
+                logoSvg.classList.add('hidden');
+                logoImg.src = logoData;
+                logoImg.classList.remove('hidden');
+                relTextoLogo.classList.add('hidden');
+            } else {
+                logoSvg.classList.remove('hidden');
+                logoImg.classList.add('hidden');
+                relTextoLogo.classList.remove('hidden');
+            }
+
+            document.getElementById('relDataEmissao').textContent = dataFormatada;
+            document.getElementById('relNumPedido').textContent = pedidoAtual.numero;
+            document.getElementById('relResponsável').textContent = pedidoAtual.responsavel || '-';
+            document.getElementById('relHospital').textContent = pedidoAtual.hospital || '-';
+            document.getElementById('relConvênio').textContent = pedidoAtual.convenio || '-';
+            document.getElementById('relMédico').textContent = pedidoAtual.medico || '-';
+            document.getElementById('relPaciente').textContent = pedidoAtual.paciente || '-';
+            document.getElementById('relDataCirurgia').textContent = pedidoAtual.dataCirurgia ? formatDateToBR(pedidoAtual.dataCirurgia) : '-';
+
+            var ePrint = { 'relDataEmissaoPrint': dataFormatada, 'relNumPedidoPrint': pedidoAtual.numero, 'relResponsávelPrint': pedidoAtual.responsavel || '-', 'relHospitalPrint': pedidoAtual.hospital || '-', 'relConvênioPrint': pedidoAtual.convenio || '-', 'relMédicoPrint': pedidoAtual.medico || '-', 'relPacientePrint': pedidoAtual.paciente || '-', 'relDataCirurgiaPrint': pedidoAtual.dataCirurgia ? formatDateToBR(pedidoAtual.dataCirurgia) : '-' };
+            Object.keys(ePrint).forEach(function(k) { var el = document.getElementById(k); if (el) el.textContent = ePrint[k]; });
+
+            var logoPrint = localStorage.getItem('logoData');
+            var logoSvgP = document.querySelector('.print-header #relLogoContainerPrint svg');
+            var logoImgP = document.getElementById('relLogoImgPrint');
+            var textoP = document.querySelector('.print-header #relLogoContainerPrint + div');
+            if (logoPrint) { if (logoSvgP) logoSvgP.style.display = 'none'; if (logoImgP) { logoImgP.src = logoPrint; logoImgP.classList.remove('hidden'); } if (textoP) textoP.style.display = 'none'; }
+
+            var tbody = document.getElementById('tabelaRelatório');
+            if (pedidoAtual.itens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-gray-400">Nenhum item</td></tr>';
+            } else {
+                var html = '';
+                for (var i = 0; i < pedidoAtual.itens.length; i++) {
+                    var item = pedidoAtual.itens[i];
+                    html += '<tr class="border-b border-gray-100">';
+                    html += '<td class="px-2 py-2 text-gray-700 text-xs" style="white-space:nowrap">' + String(i + 1).padStart(2, '0') + '</td>';
+                    html += '<td class="px-2 py-2 text-gray-800 text-xs" style="word-break:break-word">' + (item.descricao || '') + '</td>';
+                    html += '<td class="px-2 py-2 text-center text-gray-700 text-xs" style="white-space:nowrap">' + String(item.qtd).padStart(2, '0') + '</td>';
+                    html += '<td class="px-2 py-2 text-gray-700 font-mono text-xs" style="white-space:nowrap">' + (item.lote || '-') + '</td>';
+                    html += '<td class="px-2 py-2 text-gray-700 text-xs" style="white-space:nowrap">' + formatDateToBR(item.validade) + '</td>';
+                    html += '<td class="px-2 py-2 text-gray-700 font-mono text-xs" style="white-space:nowrap">' + (item.anvisa || '-') + '</td>';
+                    html += '</tr>';
+                }
+                tbody.innerHTML = html;
             }
 
             showScreen('C');
         }
 
+        var _pesqCache = null;
+
+        async function _pesqCarregarCache() {
+            var result = await gasGet({ action: 'listarPedidos' });
+            if (result && result.success && result.dados) {
+                _pesqCache = result.dados;
+            }
+        }
+
+        function abrirPesquisaPedido() {
+            document.getElementById('pesqInput').value = '';
+            document.getElementById('pesqAutocomplete').classList.add('hidden');
+            document.getElementById('pesqAutocomplete').innerHTML = '';
+            document.getElementById('pesqErro').classList.add('hidden');
+            document.getElementById('modalPesquisarPedido').classList.remove('hidden');
+            document.getElementById('pesqInput').focus();
+            _pesqCarregarCache();
+        }
+
+        function fecharModalPesquisa() {
+            document.getElementById('modalPesquisarPedido').classList.add('hidden');
+        }
+
+        function pesquisarPedidos() {
+            var busca = document.getElementById('pesqInput').value.trim().toLowerCase();
+            var acDiv = document.getElementById('pesqAutocomplete');
+            var erroEl = document.getElementById('pesqErro');
+            if (!busca) { acDiv.classList.add('hidden'); erroEl.classList.add('hidden'); return; }
+            if (!_pesqCache) { acDiv.innerHTML = '<div class="px-4 py-3 text-gray-400 text-sm">Carregando...</div>'; acDiv.classList.remove('hidden'); return; }
+
+            var filtrados = _pesqCache.filter(function(p) {
+                var num = String(p.numero || '').toLowerCase();
+                return num.indexOf(busca) !== -1;
+            });
+
+            if (filtrados.length === 0) {
+                acDiv.innerHTML = '<div class="px-4 py-3 text-gray-400 text-sm">Nenhum pedido encontrado.</div>';
+                acDiv.classList.remove('hidden');
+                erroEl.classList.add('hidden');
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < filtrados.length; i++) {
+                var p = filtrados[i];
+                html += '<div class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0" onclick="selecionarPedidoPesquisa(\'' + String(p.numero).replace(/'/g, "\\'") + '\')">';
+                html += '<div class="font-semibold text-gray-800">' + (p.numero || '') + '</div>';
+                html += '<div class="text-xs text-gray-500">' + (p.hospital || '') + ' | ' + (p.medico || '') + ' | ' + (p.paciente || '') + '</div>';
+                html += '</div>';
+            }
+            acDiv.innerHTML = html;
+            acDiv.classList.remove('hidden');
+            erroEl.classList.add('hidden');
+        }
+
+        async function selecionarPedidoPesquisa(numero) {
+            var acDiv = document.getElementById('pesqAutocomplete');
+            acDiv.classList.add('hidden');
+
+            var pedido = null;
+            if (_pesqCache) {
+                for (var i = 0; i < _pesqCache.length; i++) {
+                    if (String(_pesqCache[i].numero) === String(numero)) {
+                        pedido = _pesqCache[i];
+                        break;
+                    }
+                }
+            }
+            if (!pedido) return;
+
+            pedidoAtual.numero = pedido.numero;
+            pedidoAtual.hospital = pedido.hospital || '';
+            pedidoAtual.medico = pedido.medico || '';
+            pedidoAtual.convenio = pedido.convenio || '';
+            pedidoAtual.paciente = pedido.paciente || '';
+            pedidoAtual.dataCirurgia = pedido.dataCirurgia || '';
+            pedidoAtual.responsavel = pedido.responsavel || '';
+            pedidoAtual.dataEmissao = pedido.dataCadastro || '';
+
+            fecharModalPesquisa();
+            gerarRelatório();
+
+            var resultItens = await gasGet({ action: 'listarItensPedido', numeroPedido: numero });
+            if (resultItens && resultItens.success && resultItens.dados) {
+                pedidoAtual.itens = resultItens.dados;
+            } else {
+                pedidoAtual.itens = [];
+            }
+            gerarRelatório();
+        }
+
+        function _popularEdSelectCadastros(tipo, selectId, valorAtual) {
+            var selectEl = document.getElementById(selectId);
+            var dados = cadastrosCache[tipo] || [];
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">Selecione...</option>';
+            dados.forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.nome;
+                opt.textContent = item.nome;
+                selectEl.appendChild(opt);
+            });
+            selectEl.value = valorAtual || '';
+        }
+
+        function editarPedidoAtual() {
+            if (!pedidoAtual.numero) {
+                showToast('Nenhum pedido selecionado.', 'warning');
+                return;
+            }
+            document.getElementById('edPedidoNum').textContent = pedidoAtual.numero;
+            _popularEdSelectCadastros('Hospital', 'edHospital', pedidoAtual.hospital);
+            _popularEdSelectCadastros('Médico', 'edMedico', pedidoAtual.medico);
+            _popularEdSelectCadastros('Convênio', 'edConvenio', pedidoAtual.convenio);
+            document.getElementById('edPaciente').value = pedidoAtual.paciente || '';
+            document.getElementById('edDataCirurgia').value = parseToISODate(pedidoAtual.dataCirurgia);
+            _editarItens = JSON.parse(JSON.stringify(pedidoAtual.itens || []));
+            _renderizarEditarItens();
+            _edLimparCampos();
+            document.getElementById('edInputCodigo').value = '';
+            document.getElementById('edErro').classList.add('hidden');
+            document.getElementById('modalEditarPedido').classList.remove('hidden');
+        }
+
+        var _editarItens = [];
+
+        function _renderizarEditarItens() {
+            var tbody = document.getElementById('edItensBody');
+            var count = _editarItens.length;
+            if (_editarItens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-4 text-sm">Nenhum item</td></tr>';
+                var totalElVazio = document.getElementById('edTotalItensLabel');
+                if (totalElVazio) totalElVazio.textContent = '0';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < _editarItens.length; i++) {
+                var item = _editarItens[i];
+                var valBR = formatDateToBR(item.validade);
+                var isManual = item.origem === 'manual';
+                html += '<tr class="border-t hover:bg-gray-50">';
+                html += '<td class="px-2 py-1 text-xs text-gray-500">' + (i + 1) + '</td>';
+                html += '<td class="px-2 py-1 text-xs">' + (item.descricao || '') + '</td>';
+                var isPrineo = String(item.descricao || '').toLowerCase().indexOf('prineo') !== -1;
+                if (isPrineo) {
+                    html += '<td class="px-2 py-1 text-center"><input type="number" min="1" value="' + (item.qtd || 1) + '" class="w-12 border rounded px-1 py-0.5 text-xs text-center" onchange="_editarItemCampo(' + i + ',\'qtd\',this.value)"></td>';
+                } else {
+                    html += '<td class="px-2 py-1 text-center"><input type="number" min="1" value="' + (item.qtd || 1) + '" class="w-12 border bg-gray-100 rounded px-1 py-0.5 text-xs text-center text-gray-500 cursor-not-allowed" readonly></td>';
+                }
+                if (isManual) {
+                    html += '<td class="px-2 py-1"><input type="text" value="' + (item.lote || '') + '" class="w-full border rounded px-1 py-0.5 text-xs" onchange="_editarItemCampo(' + i + ',\'lote\',this.value)"></td>';
+                    html += '<td class="px-2 py-1"><input type="text" value="' + valBR + '" maxlength="10" class="w-full border rounded px-1 py-0.5 text-xs font-mono" oninput="this.value=mascaraDataCurta(this.value)" onchange="_editarItemCampoValidade(' + i + ',this.value)"></td>';
+                } else {
+                    html += '<td class="px-2 py-1"><input type="text" value="' + (item.lote || '') + '" readonly class="w-full border-0 bg-gray-100 rounded px-1 py-0.5 text-xs text-gray-500 cursor-not-allowed"></td>';
+                    html += '<td class="px-2 py-1"><input type="text" value="' + valBR + '" readonly class="w-full border-0 bg-gray-100 rounded px-1 py-0.5 text-xs text-gray-500 cursor-not-allowed"></td>';
+                }
+                html += '<td class="px-2 py-1"><input type="text" value="' + (item.anvisa || '') + '" readonly class="w-full border-0 bg-gray-100 rounded px-1 py-0.5 text-xs text-gray-500 cursor-not-allowed"></td>';
+                html += '<td class="px-2 py-1 text-center"><button onclick="_editarItemRemover(' + i + ')" class="text-red-500 hover:text-red-700 text-lg" title="Excluir">&times;</button></td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+            var totalEl = document.getElementById('edTotalItensLabel');
+            if (totalEl) totalEl.textContent = count;
+        }
+
+        function _editarItemCampo(idx, campo, valor) {
+            if (idx >= 0 && idx < _editarItens.length) {
+                if (campo === 'qtd') valor = parseInt(valor) || 1;
+                _editarItens[idx][campo] = valor;
+            }
+        }
+
+        function _editarItemCampoValidade(idx, valor) {
+            if (idx >= 0 && idx < _editarItens.length) {
+                var parts = valor.split('/');
+                if (parts.length === 3 && parts[2].length === 4) {
+                    _editarItens[idx].validade = parts[2] + '-' + parts[1] + '-' + parts[0];
+                }
+            }
+        }
+
+        function _editarItemRemover(idx) {
+            _editarItens.splice(idx, 1);
+            _renderizarEditarItens();
+        }
+
+        var _edMaterialAtual = null;
+        var _edAguardandoQtd = false;
+
+        async function _edBuscarMaterial() {
+            var codigo = document.getElementById('edInputCodigo').value.trim();
+            if (!codigo) return;
+            _edMaterialAtual = null;
+            document.getElementById('edItemDesc').value = '';
+            var parsed = parseGS1Barcode(codigo);
+            var result;
+            var materialLocal = await _buscarMaterialLocal(codigo, parsed);
+
+            if (materialLocal) {
+                result = { success: true, material: materialLocal };
+            } else {
+                var isLongGTIN = codigo.startsWith('01') && codigo.length >= 40;
+                if (isLongGTIN) {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                } else if (parsed.id && parsed.id !== codigo) {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: parsed.id });
+                    if (!result || !result.success) {
+                        result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                    }
+                } else {
+                    result = await gasGet({ action: 'buscarMaterial', codigo: codigo });
+                }
+            }
+
+            if (result && result.success && result.material) {
+                _edMaterialAtual = result.material;
+                document.getElementById('edItemDesc').value = result.material.descricao || '';
+                document.getElementById('edItemCodigo').value = result.material.codigo || '';
+                document.getElementById('edItemRef').value = result.material.referencia || '';
+                document.getElementById('edItemAnvisa').value = result.material.anvisa || '';
+                if (parsed.loteSn) {
+                    document.getElementById('edItemLote').value = parsed.loteSn;
+                } else if (result.material.lote) {
+                    document.getElementById('edItemLote').value = result.material.lote;
+                } else {
+                    document.getElementById('edItemLote').value = '';
+                }
+                if (parsed.validade) {
+                    var edVal = formatValidadeYYMMDDToDate(parsed.validade);
+                    if (edVal) document.getElementById('edItemValidade').value = edVal;
+                } else if (result.material.validade) {
+                    var edVal2 = parseDateBRtoISO(result.material.validade);
+                    if (edVal2) document.getElementById('edItemValidade').value = edVal2;
+                } else {
+                    document.getElementById('edItemValidade').value = '';
+                }
+                document.getElementById('edErro').classList.add('hidden');
+                if (codigo.length === 16) {
+                    _edAguardandoQtd = true;
+                    document.getElementById('edItemQtd').disabled = false;
+                    _setQtdState('edItemQtd', 'edItemQtdWrap', true);
+                    document.getElementById('edItemQtd').focus();
+                    showToast('Selecione a quantidade para inserir.', 'info');
+                } else {
+                    _edAguardandoQtd = false;
+                    document.getElementById('edItemQtd').disabled = true;
+                    _setQtdState('edItemQtd', 'edItemQtdWrap', false);
+                    document.getElementById('edItemQtd').value = '0';
+                    _edAdicionarItemQtd();
+                }
+            } else {
+                if (parsed.validade) {
+                    var edVal = formatValidadeYYMMDDToDate(parsed.validade);
+                    if (edVal) document.getElementById('edItemValidade').value = edVal;
+                }
+                if (parsed.loteSn) {
+                    document.getElementById('edItemLote').value = parsed.loteSn;
+                }
+                if (parsed.validade || parsed.loteSn) {
+                    showToast('Material não cadastrado. Preencha manualmente.', 'warning');
+                } else {
+                    showToast('Material não encontrado.', 'error');
+                }
+                document.getElementById('edErro').textContent = result ? result.mensagem : 'Material não encontrado.';
+                document.getElementById('edErro').classList.remove('hidden');
+            }
+        }
+
+        function _edAdicionarItemQtd() {
+            if (!_edMaterialAtual) return;
+            var qtd = parseInt(document.getElementById('edItemQtd').value) || 1;
+            var lote = document.getElementById('edItemLote').value.trim();
+            var validade = document.getElementById('edItemValidade').value;
+            _editarItens.push({
+                codigo: _edMaterialAtual.codigo || '',
+                descricao: _edMaterialAtual.descricao || '',
+                referencia: _edMaterialAtual.referencia || '',
+                anvisa: _edMaterialAtual.anvisa || '',
+                qtd: qtd,
+                lote: lote,
+                validade: validade
+            });
+            _renderizarEditarItens();
+            _edLimparCampos();
+            document.getElementById('edInputCodigo').value = '';
+            document.getElementById('edInputCodigo').focus();
+        }
+
+        function _edLimparCampos() {
+            _edMaterialAtual = null;
+            document.getElementById('edItemDesc').value = '';
+            document.getElementById('edItemLote').value = '';
+            document.getElementById('edItemValidade').value = '';
+            document.getElementById('edItemCodigo').value = '';
+            document.getElementById('edItemRef').value = '';
+            document.getElementById('edItemAnvisa').value = '';
+            document.getElementById('edItemQtd').value = '0';
+            document.getElementById('edItemQtd').disabled = true;
+            _setQtdState('edItemQtd', 'edItemQtdWrap', false);
+            _edAguardandoQtd = false;
+            document.getElementById('edErro').classList.add('hidden');
+        }
+
+        var _edModoManual = false;
+
+        function _edOpenModalInserirManual() {
+            _edModoManual = true;
+            openModalInserirManual();
+        }
+
+        function _edConfirmarManual() {
+            var ref = document.getElementById('manualReferência').value.trim();
+            var lote = document.getElementById('manualLote').value.trim();
+            var validadeBR = document.getElementById('manualValidade').value.trim();
+            var anvisa = document.getElementById('manualAnvisa').value.trim();
+            var qtd = parseInt(document.getElementById('manualQtd').value) || 1;
+            var erroEl = document.getElementById('manualErro');
+            if (!ref) { erroEl.textContent = 'Informe a Referencia.'; erroEl.classList.remove('hidden'); return; }
+            var material = _manualSelecionado || _manualRefSelecionada || {};
+            var validade = '';
+            if (validadeBR) {
+                var parts = validadeBR.split('/');
+                if (parts.length === 3 && parts[2].length === 4) validade = parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+            _editarItens.push({
+                codigo: material.codigo || '',
+                descricao: material.descricao || '',
+                referencia: ref,
+                anvisa: anvisa || material.anvisa || '',
+                qtd: qtd,
+                lote: lote,
+                validade: validade
+            });
+            _renderizarEditarItens();
+            closeModalInserirManual();
+            _edLimparCampos();
+            _edModoManual = false;
+        }
+
+        function closeModalInserirManual() {
+            document.getElementById('modalInserirManual').classList.add('hidden');
+            document.getElementById('manualReferência').value = '';
+            document.getElementById('manualAnvisa').value = '';
+            document.getElementById('manualLote').value = '';
+            document.getElementById('manualValidade').value = '';
+            document.getElementById('manualQtd').value = '1';
+            document.getElementById('manualErro').classList.add('hidden');
+            var acDiv = document.getElementById('manualAutocomplete');
+            if (acDiv) { acDiv.classList.add('hidden'); acDiv.innerHTML = ''; }
+            _manualSelecionado = null;
+            _manualRefSelecionada = null;
+            _edModoManual = false;
+        }
+
+        async function salvarEdicaoPedido() {
+            if (_editarItens.length === 0) {
+                showToast('Adicione pelo menos um item.', 'warning');
+                return;
+            }
+            var hospital = document.getElementById('edHospital').value.trim();
+            var medico = document.getElementById('edMedico').value.trim();
+            var convenio = document.getElementById('edConvenio').value.trim();
+            var paciente = document.getElementById('edPaciente').value.trim();
+            var dataCirurgia = document.getElementById('edDataCirurgia').value;
+            if (!hospital || !medico || !convenio || !paciente || !dataCirurgia) {
+                showToast('Preencha Hospital, Medico, Convenio, Paciente e Data Cirurgia.', 'warning');
+                return;
+            }
+            var itensAntigos = JSON.parse(JSON.stringify(pedidoAtual.itens || []));
+            var dadosAntigos = {
+                hospital: pedidoAtual.hospital,
+                medico: pedidoAtual.medico,
+                convenio: pedidoAtual.convenio,
+                paciente: pedidoAtual.paciente,
+                dataCirurgia: pedidoAtual.dataCirurgia
+            };
+            pedidoAtual.hospital = hospital;
+            pedidoAtual.medico = medico;
+            pedidoAtual.convenio = convenio;
+            pedidoAtual.paciente = paciente;
+            pedidoAtual.dataCirurgia = dataCirurgia;
+            pedidoAtual.itens = JSON.parse(JSON.stringify(_editarItens));
+            renderizarTabela();
+            gerarRelatório();
+            fecharModalEditarPedido();
+            var result = await gasGet({
+                action: 'atualizarItensPedido',
+                numeroPedido: pedidoAtual.numero,
+                hospital: pedidoAtual.hospital,
+                medico: pedidoAtual.medico,
+                convenio: pedidoAtual.convenio,
+                paciente: pedidoAtual.paciente,
+                dataCirurgia: pedidoAtual.dataCirurgia,
+                itens: JSON.stringify(_editarItens)
+            });
+            if (result && result.success) {
+                showToast('Pedido atualizado com sucesso!', 'success');
+            } else {
+                pedidoAtual.itens = itensAntigos;
+                pedidoAtual.hospital = dadosAntigos.hospital;
+                pedidoAtual.medico = dadosAntigos.medico;
+                pedidoAtual.convenio = dadosAntigos.convenio;
+                pedidoAtual.paciente = dadosAntigos.paciente;
+                pedidoAtual.dataCirurgia = dadosAntigos.dataCirurgia;
+                renderizarTabela();
+                gerarRelatório();
+                showToast(result ? result.mensagem : 'Erro ao salvar.', 'error');
+            }
+        }
+
+        function fecharModalEditarPedido() {
+            document.getElementById('modalEditarPedido').classList.add('hidden');
+        }
+
         function openNovoImplanteModal() {
-            document.getElementById('novoImplCodigo').value = '';
-            document.getElementById('novoImplDescricao').value = '';
-            document.getElementById('novoImplReferencia').value = '';
+            document.getElementById('novoImplCódigo').value = '';
+            document.getElementById('novoImplDescrição').value = '';
+            document.getElementById('novoImplReferência').value = '';
             document.getElementById('novoImplAnvisa').value = '';
+            document.getElementById('novoImplBarcode').value = '';
             document.getElementById('ultimoImplanteCadastrado').classList.add('hidden');
             document.getElementById('modalNovoImplante').classList.remove('hidden');
+            document.getElementById('novoImplBarcode').focus();
+        }
+
+        function parseAndFillNovoImplante() {
+            var code = document.getElementById('novoImplBarcode').value.trim();
+            if (!code) return;
+            var parsed = parseGS1Barcode(code);
+            if (parsed.id) {
+                document.getElementById('novoImplCódigo').value = parsed.id;
+                showToast('ID extraido do barcode: ' + parsed.id, 'info');
+            }
+            if (parsed.validade) {
+                var d = formatValidadeYYMMDDToDate(parsed.validade);
+                showToast('Validade extraida: ' + parsed.validade + (d ? ' (' + d + ')' : ''), 'info');
+            }
+            if (parsed.loteSn) {
+                showToast('Lote/SN extraido: ' + parsed.loteSn, 'info');
+            }
         }
 
         async function salvarNovoImplante() {
-            var codigo = document.getElementById('novoImplCodigo').value.trim();
-            var descricao = document.getElementById('novoImplDescricao').value.trim();
+            var codigo = document.getElementById('novoImplCódigo').value.trim();
+            var descricao = document.getElementById('novoImplDescrição').value.trim();
             if (!codigo || !descricao) {
-                showToast('Preencha os campos obrigatorios (Codigo e Descricao).', 'warning');
+                showToast('Preencha os campos obrigatórios (Código e Descrição).', 'warning');
                 return;
             }
             var body = {
                 action: 'salvarMaterial',
                 codigo: codigo,
                 descricao: descricao,
-                referencia: document.getElementById('novoImplReferencia').value.trim(),
+                referencia: document.getElementById('novoImplReferência').value.trim(),
                 anvisa: document.getElementById('novoImplAnvisa').value.trim()
             };
             var result = await gasPost(body);
             if (result && result.success) {
                 showToast('Implante cadastrado com sucesso!', 'success');
-                document.getElementById('ultimoImplCodigo').textContent = codigo;
-                document.getElementById('ultimoImplDescricao').textContent = descricao;
-                document.getElementById('ultimoImplReferencia').textContent = body.referencia || '-';
+                document.getElementById('ultimoImplCódigo').textContent = codigo;
+                document.getElementById('ultimoImplDescrição').textContent = descricao;
+                document.getElementById('ultimoImplReferência').textContent = body.referencia || '-';
                 document.getElementById('ultimoImplAnvisa').textContent = body.anvisa || '-';
                 document.getElementById('ultimoImplanteCadastrado').classList.remove('hidden');
-                document.getElementById('novoImplCodigo').value = '';
-                document.getElementById('novoImplDescricao').value = '';
-                document.getElementById('novoImplReferencia').value = '';
+                _refCache = _refCache || [];
+                if (!_refCache.some(function(item) { return String(item.codigo).trim() === codigo; })) {
+                    _refCache.push({
+                        barcode: codigo,
+                        codigo: codigo,
+                        descricao: descricao,
+                        referencia: body.referencia || '',
+                        anvisa: body.anvisa || '',
+                        lote: '',
+                        validade: ''
+                    });
+                    _persistirMateriaisCache();
+                }
+                document.getElementById('novoImplCódigo').value = '';
+                document.getElementById('novoImplDescrição').value = '';
+                document.getElementById('novoImplReferência').value = '';
                 document.getElementById('novoImplAnvisa').value = '';
             } else {
                 showToast('Erro ao cadastrar implante.', 'error');
@@ -772,7 +1963,13 @@
             if (result && result.success) {
                 showToast(tipo + ' cadastrado com sucesso!', 'success');
                 closeModal('modalCadastro');
-                await carregarCadastros(tipo);
+                cadastrosCache[tipo] = cadastrosCache[tipo] || [];
+                if (!cadastrosCache[tipo].some(function(item) { return String(item.nome).toLowerCase() === nome.toLowerCase(); })) {
+                    cadastrosCache[tipo].push({ nome: nome, dataCadastro: '' });
+                }
+                _persistirCadastrosCache();
+                _popularSelectCadastros(tipo);
+                _refreshCadastrosRemote(tipo);
             } else {
                 showToast('Erro ao cadastrar.', 'error');
             }
@@ -787,12 +1984,9 @@
             document.getElementById('editarNome').value = '';
             document.getElementById('modalEditarCadastro').classList.remove('hidden');
             select.dataset.tipo = tipo;
-
-            var result = await gasGet({ action: 'listarCadastros', tipo: tipo });
+            var dados = cadastrosCache[tipo] || _cacheLerJson(CACHE_KEYS.cadastros, {})[tipo] || [];
             select.innerHTML = '<option value="">Selecione...</option>';
-            var dados = result.dados || result.data;
-            if (result && result.success && dados) {
-                cadastrosCache[tipo] = dados;
+            if (dados && dados.length) {
                 dados.forEach(function(item) {
                     var opt = document.createElement('option');
                     opt.value = item.id || item.nome;
@@ -800,6 +1994,7 @@
                     select.appendChild(opt);
                 });
             }
+            _refreshCadastrosRemote(tipo);
         }
 
         function carregarEdicao() {
@@ -828,7 +2023,15 @@
             if (result && result.success) {
                 showToast(tipo + ' atualizado com sucesso!', 'success');
                 closeModal('modalEditarCadastro');
-                await carregarCadastros(tipo);
+                cadastrosCache[tipo] = (cadastrosCache[tipo] || []).map(function(item) {
+                    if (String(item.id || item.nome).toLowerCase() === String(id).toLowerCase()) {
+                        return { nome: nome, dataCadastro: item.dataCadastro || '', id: item.id || nome };
+                    }
+                    return item;
+                });
+                _persistirCadastrosCache();
+                _popularSelectCadastros(tipo);
+                _refreshCadastrosRemote(tipo);
             } else {
                 showToast('Erro ao atualizar.', 'error');
             }
@@ -845,42 +2048,110 @@
             var body = { action: 'excluirCadastro', tipo: tipo, nome: id };
             var result = await gasPost(body);
             if (result && result.success) {
-                showToast(tipo + ' excluido com sucesso!', 'success');
+                showToast(tipo + ' excluído com sucesso!', 'success');
                 closeModal('modalEditarCadastro');
-                await carregarCadastros(tipo);
+                cadastrosCache[tipo] = (cadastrosCache[tipo] || []).filter(function(item) {
+                    return String(item.id || item.nome).toLowerCase() !== String(id).toLowerCase();
+                });
+                _persistirCadastrosCache();
+                _popularSelectCadastros(tipo);
+                _refreshCadastrosRemote(tipo);
             } else {
                 showToast('Erro ao excluir.', 'error');
             }
         }
 
         async function carregarCadastros(tipo) {
-            var result = await gasGet({ action: 'listarCadastros', tipo: tipo });
-            var dados = result.dados || result.data;
-            if (result && result.success && dados) {
-                cadastrosCache[tipo] = dados;
-                var selectId = tipo === 'Hospital' ? 'hospital' : (tipo === 'Convenio' ? 'convenio' : 'medico');
-                var selectEl = document.getElementById(selectId);
-                if (selectEl) {
-                    var currentVal = selectEl.value;
-                    selectEl.innerHTML = '<option value="">Selecione...</option>';
-                    dados.forEach(function(item) {
-                        var opt = document.createElement('option');
-                        opt.value = item.nome;
-                        opt.textContent = item.nome;
-                        selectEl.appendChild(opt);
-                    });
-                    selectEl.value = currentVal;
+            var cached = cadastrosCache[tipo];
+            if (!cached || !cached.length) {
+                var persisted = _cacheLerJson(CACHE_KEYS.cadastros, {});
+                if (persisted && Array.isArray(persisted[tipo]) && persisted[tipo].length) {
+                    cadastrosCache[tipo] = persisted[tipo];
+                    cached = cadastrosCache[tipo];
+                    _popularSelectCadastros(tipo);
+                    _refreshCadastrosRemote(tipo);
+                    return cached;
                 }
             }
+
+            if (cached && cached.length) {
+                _popularSelectCadastros(tipo);
+                _refreshCadastrosRemote(tipo);
+                return cached;
+            }
+
+            var result = await gasGet({ action: 'listarCadastros', tipo: tipo });
+            var dados = result && (result.dados || result.data);
+            if (result && result.success && dados) {
+                cadastrosCache[tipo] = dados;
+                _persistirCadastrosCache();
+                _popularSelectCadastros(tipo);
+                return dados;
+            }
+            return [];
         }
 
         async function carregarTodosCadastros() {
             await Promise.all([
                 carregarCadastros('Hospital'),
-                carregarCadastros('Convenio'),
-                carregarCadastros('Medico')
+                carregarCadastros('Convênio'),
+                carregarCadastros('Médico')
             ]);
         }
+
+        function verificarCamposPedido() {
+            var hospital = document.getElementById('hospital').value;
+            var medico = document.getElementById('medico').value;
+            var convenio = document.getElementById('convenio').value;
+            var paciente = document.getElementById('paciente').value.trim();
+            var dataCirurgia = document.getElementById('dataCirurgia').value;
+            var responsavel = document.getElementById('responsavel').value.trim();
+            var btn = document.getElementById('navB');
+            var todosPreenchidos = hospital && medico && convenio && paciente && dataCirurgia && responsavel;
+            btn.disabled = !todosPreenchidos;
+            if (todosPreenchidos) {
+                btn.classList.remove('bg-gray-200', 'text-gray-600');
+                btn.classList.add('bg-green-500', 'text-white');
+            } else {
+                btn.classList.remove('bg-green-500', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-600');
+            }
+        }
+
+        document.getElementById('hospital').addEventListener('change', verificarCamposPedido);
+        document.getElementById('medico').addEventListener('change', verificarCamposPedido);
+        document.getElementById('convenio').addEventListener('change', verificarCamposPedido);
+        document.getElementById('paciente').addEventListener('input', verificarCamposPedido);
+        document.getElementById('dataCirurgia').addEventListener('change', verificarCamposPedido);
+        document.getElementById('responsavel').addEventListener('input', verificarCamposPedido);
+
+        function atualizarPlaceholderCinza() {
+            ['hospital', 'medico', 'convenio'].forEach(function(id) {
+                var el = document.getElementById(id);
+                el.classList.toggle('placeholder-active', !el.value);
+            });
+            var dc = document.getElementById('dataCirurgia');
+            dc.classList.toggle('placeholder-active', !dc.value);
+        }
+        document.getElementById('hospital').addEventListener('change', atualizarPlaceholderCinza);
+        document.getElementById('medico').addEventListener('change', atualizarPlaceholderCinza);
+        document.getElementById('convenio').addEventListener('change', atualizarPlaceholderCinza);
+        document.getElementById('dataCirurgia').addEventListener('change', atualizarPlaceholderCinza);
+        atualizarPlaceholderCinza();
+
+        document.getElementById('itemQtd').addEventListener('change', function() {
+            if (aguardandoQtd && materialAtual) {
+                aguardandoQtd = false;
+                adicionarItem();
+            }
+        });
+
+        document.getElementById('edItemQtd').addEventListener('change', function() {
+            if (_edAguardandoQtd && _edMaterialAtual) {
+                _edAguardandoQtd = false;
+                _edAdicionarItemQtd();
+            }
+        });
 
         // ESC key closes modals
         document.addEventListener('keydown', function(e) {
@@ -888,6 +2159,7 @@
                 closeModal('modalNovoImplante');
                 closeModal('modalCadastro');
                 closeModal('modalEditarCadastro');
+                fecharModalPesquisa();
             }
         });
 
@@ -900,46 +2172,400 @@
             });
         });
 
+        var manualMaterialCache = null;
+
+        var _refCache = null;
+        var _refLoading = false;
+        var _refPromise = null;
+
+        function aplicarMascaraLote(valor) {
+            var digits = valor.replace(/\D/g, '');
+            if (digits.length > 10) digits = digits.substring(0, 10);
+            if (digits.length > 7) {
+                return digits.substring(0, 7) + '-' + digits.substring(7);
+            }
+            return digits;
+        }
+
+        function mascaraDataCurta(valor) {
+            var digits = String(valor).replace(/\D/g, '');
+            if (digits.length === 8) {
+                digits = digits.substring(0, 4) + digits.substring(6, 8);
+            }
+            if (digits.length > 6) digits = digits.substring(0, 6);
+
+            var dia = digits.substring(0, 2);
+            var mes = digits.substring(2, 4);
+            var aa = digits.substring(4, 6);
+
+            if (dia.length === 2) {
+                var d = parseInt(dia, 10);
+                if (d < 1) dia = '01';
+                if (d > 31) dia = '31';
+            }
+            if (mes.length === 2) {
+                var m = parseInt(mes, 10);
+                if (m < 1) mes = '01';
+                if (m > 12) mes = '12';
+            }
+
+            var out = dia;
+            if (mes) out += '/' + mes;
+            if (aa) out += '/20' + aa;
+            return out;
+        }
+
+        function validarValidade(dia, mes, ano) {
+            var d = parseInt(dia, 10);
+            var m = parseInt(mes, 10);
+            var a = parseInt(ano, 10);
+            if (m < 1 || m > 12) return false;
+            var diasNoMes = new Date(a, m, 0).getDate();
+            if (d < 1 || d > diasNoMes) return false;
+            var data = new Date(a, m - 1, d);
+            var hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            data.setHours(0, 0, 0, 0);
+            return data >= hoje;
+        }
+
+        function aplicarEstadoValidade(valido) {
+            var el = document.getElementById('manualValidade');
+            if (valido) {
+                el.classList.remove('border-red-500', 'bg-red-50');
+                el.classList.add('border-gray-300');
+            } else {
+                el.classList.add('border-red-500', 'bg-red-50');
+            }
+        }
+
+        function _getRefInput() { return document.querySelector('[data-ref="input"]'); }
+
+        function openModalInserirManual() {
+            try {
+                var modal = document.getElementById('modalInserirManual');
+                if (!modal) { console.error('modal not found'); return; }
+                var refEl = _getRefInput();
+                if (refEl) refEl.value = '';
+                var descEl = document.getElementById('manualDescrição');
+                if (descEl) descEl.value = '';
+                var loteEl = document.getElementById('manualLote');
+                if (loteEl) loteEl.value = '';
+                var valEl = document.getElementById('manualValidade');
+                if (valEl) valEl.value = '';
+                var anvisaEl = document.getElementById('manualAnvisa');
+                if (anvisaEl) anvisaEl.value = '';
+                var qtdEl = document.getElementById('manualQtd');
+                if (qtdEl) { qtdEl.value = '0'; qtdEl.disabled = true; }
+                var erroEl = document.getElementById('manualErro');
+                if (erroEl) erroEl.classList.add('hidden');
+                var btnEl = document.getElementById('manualBtnAdicionar');
+                if (btnEl) btnEl.disabled = true;
+                var acEl = document.getElementById('manualAutocomplete');
+                if (acEl) { acEl.classList.add('hidden'); acEl.innerHTML = ''; }
+                manualMaterialCache = null;
+                modal.classList.remove('hidden');
+                if (refEl) refEl.focus();
+                _loadRefCache();
+            } catch (e) { console.error('openModalInserirManual error:', e); }
+        }
+
+        function _refreshRefCacheRemote() {
+            if (_refLoading) return _refPromise;
+            _refLoading = true;
+            _refPromise = gasGet({ action: 'listarMateriais' }).then(function(res) {
+                if (res && res.success && res.dados) {
+                    _refCache = res.dados.filter(function(m) {
+                        return (m.referencia && String(m.referencia).trim()) || (m.codigo && String(m.codigo).trim()) || (m.barcode && String(m.barcode).trim());
+                    });
+                    _persistirMateriaisCache();
+                } else {
+                    _refCache = [];
+                }
+                return _refCache;
+            }).catch(function() {
+                return _refCache || [];
+            }).finally(function() {
+                _refLoading = false;
+                _refPromise = null;
+            });
+            return _refPromise;
+        }
+
+        function _loadRefCache() {
+            if (_refCache && _refCache.length) {
+                _refreshRefCacheRemote();
+                return Promise.resolve(_refCache);
+            }
+
+            var persisted = _cacheLerJson(CACHE_KEYS.materiais, null);
+            if (Array.isArray(persisted) && persisted.length) {
+                _refCache = persisted;
+                _refreshRefCacheRemote();
+                return Promise.resolve(_refCache);
+            }
+
+            if (_refLoading) return _refPromise;
+            return _refreshRefCacheRemote();
+        }
+
+        async function buscarReferenciaAutocomplete() {
+            var el = _getRefInput();
+            var acDiv = document.getElementById('manualAutocomplete');
+            if (!el || !acDiv) return;
+            var q = el.value.trim();
+            if (!q) {
+                acDiv.classList.add('hidden');
+                acDiv.innerHTML = '';
+                document.getElementById('manualDescrição').value = '';
+                document.getElementById('manualAnvisa').value = '';
+                document.getElementById('manualLote').value = '';
+                document.getElementById('manualValidade').value = '';
+                document.getElementById('manualQtd').value = '0';
+                document.getElementById('manualQtd').disabled = true;
+                document.getElementById('manualQtd').classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+                document.getElementById('manualQtd').classList.remove('bg-white', 'text-gray-800');
+                document.getElementById('manualBtnAdicionar').disabled = true;
+                manualMaterialCache = null;
+                return;
+            }
+            var cache = await _loadRefCache();
+            var qLow = q.toLowerCase();
+            var hits = [];
+            for (var i = 0; i < cache.length && hits.length < 10; i++) {
+                var m = cache[i];
+                var mRef = String(m.referencia || '');
+                var mDesc = String(m.descricao || '');
+                var mCod = String(m.codigo || '');
+                var mBar = String(m.barcode || '');
+                if ((mRef && mRef.toLowerCase().indexOf(qLow) !== -1) ||
+                    (mDesc && mDesc.toLowerCase().indexOf(qLow) !== -1) ||
+                    (mCod && mCod.toLowerCase().indexOf(qLow) !== -1) ||
+                    (mBar && mBar.toLowerCase().indexOf(qLow) !== -1)) {
+                    hits.push(m);
+                }
+            }
+            if (hits.length === 0) { acDiv.classList.add('hidden'); acDiv.innerHTML = ''; return; }
+            var h0 = hits[0];
+            if (hits.length === 1 && ((String(h0.referencia||'') && String(h0.referencia||'').toLowerCase() === qLow) || (String(h0.barcode||'') && String(h0.barcode||'').toLowerCase() === qLow) || (String(h0.codigo||'') && String(h0.codigo||'').toLowerCase() === qLow))) {
+                selecionarReferenciaAutocompleteItem(String(h0.referencia||''), String(h0.descricao||''), String(h0.anvisa||''), String(h0.codigo||''));
+                return;
+            }
+            var html = '';
+            for (var j = 0; j < hits.length; j++) {
+                var m2 = hits[j];
+                var r = String(m2.referencia || '').replace(/'/g, "\\'");
+                var d = String(m2.descricao || '').replace(/'/g, "\\'");
+                var a = String(m2.anvisa || '').replace(/'/g, "\\'");
+                var c = String(m2.codigo || '').replace(/'/g, "\\'");
+                html += '<div class="px-3 py-2 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0" onmousedown="selecionarReferenciaAutocompleteItem(\'' + r + '\',\'' + d + '\',\'' + a + '\',\'' + c + '\')">';
+                html += '<span class="font-semibold text-teal-700">' + (m2.referencia || m2.codigo || '') + '</span>';
+                html += ' <span class="text-gray-400">-</span> <span class="text-gray-600">' + (m2.descricao || '') + '</span></div>';
+            }
+            acDiv.innerHTML = html;
+            acDiv.classList.remove('hidden');
+        }
+
+        function selecionarReferenciaAutocompleteItem(ref, desc, anvisa, codigo) {
+            var refEl = _getRefInput();
+            if (refEl) refEl.value = ref;
+            document.getElementById('manualDescrição').value = desc;
+            document.getElementById('manualAnvisa').value = anvisa;
+            var acDiv = document.getElementById('manualAutocomplete');
+            acDiv.classList.add('hidden');
+            acDiv.innerHTML = '';
+            manualMaterialCache = { codigo: codigo, referencia: ref, descricao: desc, anvisa: anvisa };
+            var refLower = (ref || '').toLowerCase();
+            var loteEl = document.getElementById('manualLote');
+            if (refLower !== 'clr602') {
+                loteEl.oninput = function() {
+                    var pos = this.selectionStart;
+                    var oldLen = this.value.length;
+                    this.value = aplicarMascaraLote(this.value);
+                    var newLen = this.value.length;
+                    this.setSelectionRange(pos + newLen - oldLen, pos + newLen - oldLen);
+                };
+                loteEl.placeholder = '9999999-999';
+                loteEl.maxlength = 12;
+            } else {
+                loteEl.oninput = function() {
+                    if (this.value.length > 6) this.value = this.value.substring(0, 6);
+                };
+                loteEl.placeholder = 'Lote-SN';
+                loteEl.maxlength = 6;
+            }
+            document.getElementById('manualLote').value = '';
+            document.getElementById('manualValidade').value = '';
+            document.getElementById('manualQtd').disabled = false;
+            document.getElementById('manualQtd').classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            document.getElementById('manualQtd').classList.add('bg-white', 'text-gray-800');
+            document.getElementById('manualQtd').value = '1';
+            document.getElementById('manualBtnAdicionar').disabled = false;
+            document.getElementById('manualErro').classList.add('hidden');
+        }
+
+        function selecionarReferenciaAutocomplete() {
+            var acDiv = document.getElementById('manualAutocomplete');
+            if (!acDiv.classList.contains('hidden')) {
+                var first = acDiv.querySelector('div');
+                if (first) {
+                    first.dispatchEvent(new Event('mousedown'));
+                }
+            }
+        }
+
+        async function buscarPorReferência() {
+            var referencia = document.getElementById('manualReferência').value.trim();
+            if (!referencia) return;
+
+            var erroEl = document.getElementById('manualErro');
+            erroEl.classList.add('hidden');
+            manualMaterialCache = null;
+            document.getElementById('manualBtnAdicionar').disabled = true;
+
+            var result = await gasGet({ action: 'buscarMaterialPorReferencia', referencia: referencia });
+
+            if (result && result.success && result.material) {
+                manualMaterialCache = result.material;
+                document.getElementById('manualDescrição').value = result.material.descricao || '';
+                document.getElementById('manualAnvisa').value = result.material.anvisa || '';
+                document.getElementById('manualLote').value = '';
+                document.getElementById('manualValidade').value = '';
+
+                var refLower = referencia.toLowerCase();
+                var loteEl2 = document.getElementById('manualLote');
+                if (refLower !== 'clr602') {
+                    loteEl2.oninput = function() {
+                        var pos = this.selectionStart;
+                        var oldLen = this.value.length;
+                        this.value = aplicarMascaraLote(this.value);
+                        var newLen = this.value.length;
+                        this.setSelectionRange(pos + newLen - oldLen, pos + newLen - oldLen);
+                    };
+                    loteEl2.placeholder = '9999999-999';
+                    loteEl2.maxlength = 12;
+                } else {
+                    loteEl2.oninput = function() {
+                        if (this.value.length > 6) this.value = this.value.substring(0, 6);
+                    };
+                    loteEl2.placeholder = 'Lote-SN';
+                    loteEl2.maxlength = 6;
+                }
+
+                document.getElementById('manualBtnAdicionar').disabled = false;
+            } else {
+                erroEl.textContent = result ? result.mensagem : 'Erro ao buscar material.';
+                erroEl.classList.remove('hidden');
+            }
+        }
+
+        function adicionarManual() {
+            if (!manualMaterialCache) return;
+
+            var qtd = parseInt(document.getElementById('manualQtd').value) || 0;
+            if (qtd < 1) {
+                showToast('Selecione a quantidade.', 'warning');
+                document.getElementById('manualQtd').focus();
+                return;
+            }
+            var lote = document.getElementById('manualLote').value.trim();
+            var validadeBR = document.getElementById('manualValidade').value;
+
+            if (!lote) {
+                showToast('Preencha o campo Lote-SN.', 'warning');
+                document.getElementById('manualLote').focus();
+                return;
+            }
+            if (!validadeBR || validadeBR.length !== 10) {
+                showToast('Preencha o campo Validade (DD/MM/AAAA).', 'warning');
+                document.getElementById('manualValidade').focus();
+                return;
+            }
+            var vParts = validadeBR.split('/');
+            if (!validarValidade(vParts[0], vParts[1], vParts[2])) {
+                aplicarEstadoValidade(false);
+                showToast('Data de validade inválida. Verifique se está no formato DD/MM/AAAA e se não é anterior à data de hoje.', 'error');
+                document.getElementById('manualValidade').focus();
+                return;
+            }
+
+            var validade = '';
+            if (validadeBR && validadeBR.length === 10) {
+                var parts = validadeBR.split('/');
+                validade = parts[2] + '-' + parts[1] + '-' + parts[0];
+            }
+
+            if (_edModoManual) {
+                _editarItens.push({
+                    codigo: manualMaterialCache.codigo,
+                    descricao: manualMaterialCache.descricao,
+                    referencia: manualMaterialCache.referencia,
+                    anvisa: document.getElementById('manualAnvisa').value.trim() || manualMaterialCache.anvisa || '',
+                    qtd: qtd,
+                    lote: lote,
+                    validade: validade,
+                    origem: 'manual'
+                });
+                _renderizarEditarItens();
+                _edModoManual = false;
+            } else {
+                pedidoAtual.itens.push({
+                    codigo: manualMaterialCache.codigo,
+                    descricao: manualMaterialCache.descricao,
+                    referencia: manualMaterialCache.referencia,
+                    anvisa: manualMaterialCache.anvisa,
+                    qtd: qtd,
+                    lote: lote,
+                    validade: validade,
+                    origem: 'manual'
+                });
+                renderizarTabela();
+            }
+            closeModalInserirManual();
+            showToast('Material adicionado com sucesso!', 'success');
+        }
+
+        function expandSidebar() {
+            var sb = document.getElementById('sidebar');
+            sb.style.width = '220px';
+            document.getElementById('sidebarMenu').classList.remove('hidden');
+            document.getElementById('sidebarMenu').classList.add('flex');
+        }
+        function collapseSidebar() {
+            var sb = document.getElementById('sidebar');
+            sb.style.width = '56px';
+            document.getElementById('sidebarMenu').classList.add('hidden');
+            document.getElementById('sidebarMenu').classList.remove('flex');
+        }
+
+        function imprimirRelatorio() {
+            window.print();
+        }
+
+        function baixarPDF() {
+            var element = document.getElementById('printArea');
+            var numPedido = document.getElementById('relNumPedidoPrint')?.textContent || document.getElementById('relNumPedido')?.textContent || 'pedido';
+            var opt = {
+                margin: [10, 0, 10, 0],
+                filename: 'pedido_' + numPedido + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
         // Init
-        (function init() {
-            document.getElementById('numeroPedido').value = gerarNumeroPedido();
+        (async function init() {
+            document.getElementById('numeroPedido').value = await gerarNumeroPedido();
             document.getElementById('dataEmissao').value = formatarDataBR();
             pedidoAtual.numero = document.getElementById('numeroPedido').value;
             pedidoAtual.dataEmissao = document.getElementById('dataEmissao').value;
+            _restaurarCadastrosCache();
+            _restaurarMateriaisCache();
             carregarTodosCadastros();
-
-            function removerBannerNetlify() {
-                document.querySelectorAll('iframe').forEach(function(f) {
-                    if (f.src && f.src.indexOf('netlify') !== -1) f.remove();
-                });
-                document.querySelectorAll('[id*="netlify"], [class*="netlify"], [data-netlify]').forEach(function(el) {
-                    el.remove();
-                });
-                document.querySelectorAll('a[href*="netlify"]').forEach(function(el) {
-                    var p = el.parentElement;
-                    if (p) p.remove();
-                });
-                document.querySelectorAll('div[style*="fixed"]').forEach(function(el) {
-                    if (el.textContent.indexOf('Netlify') !== -1 || el.innerHTML.indexOf('netlify') !== -1) el.remove();
-                });
-            }
-            removerBannerNetlify();
-            setInterval(removerBannerNetlify, 300);
-
-            var obs = new MutationObserver(function(mutations) {
-                mutations.forEach(function(m) {
-                    m.addedNodes.forEach(function(n) {
-                        if (n.nodeType === 1) {
-                            var html = n.outerHTML || '';
-                            var txt = n.textContent || '';
-                            if (html.indexOf('netlify') !== -1 || txt.indexOf('Netlify') !== -1) {
-                                n.remove();
-                            }
-                        }
-                    });
-                });
-            });
-            obs.observe(document.body, { childList: true, subtree: true });
+            _loadRefCache();
         })();
     </script>
 </body>
