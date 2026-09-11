@@ -47,17 +47,12 @@
         @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
         @media print {
             .no-print { display: none !important; }
-            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; min-height: 0 !important; height: auto !important; display: block !important; }
+            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; min-height: 0 !important; height: auto !important; }
             body { background: white !important; }
-            .print-content { display: block !important; flex: none !important; }
-            .print-footer-sig { page-break-inside: avoid !important; break-inside: avoid !important; background: white !important; padding: 15px 40px !important; margin-top: 40px !important; }
-            .print-header { display: block !important; }
-            .print-screen-header { display: none !important; }
-            .print-screen-only { display: none !important; }
+            .print-footer-sig { page-break-inside: avoid !important; background: white !important; padding: 15px 40px !important; }
             #tabelaRelatório thead { display: table-header-group !important; }
-            #screenC { page-break-after: avoid !important; }
         }
-        @page { size: A4; margin: 10mm; }
+        @page { margin-left: 0; margin-right: 0; @bottom-center { content: "Página " counter(page) " de " counter(pages); font-size: 9px; color: #9ca3af; } }
     </style>
     <style>.netlify-badge, [class*="netlify"], [id*="netlify"]{display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important;position:fixed!important;bottom:-100px!important;z-index:-9999!important}</style>
 </head>
@@ -316,7 +311,7 @@
                     </div>
                 </div>
 
-                <div class="print-content flex-1 flex flex-col">
+                <div class="print-content">
                 <!-- Header (visible only on screen, hidden in print) -->
                 <div class="print-screen-header flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
@@ -372,7 +367,7 @@
                 </div><!-- /print-body -->
 
                 <!-- Signatures -->
-                <div class="print-footer-sig border border-gray-300 rounded-lg py-8 px-10 flex justify-between items-end mt-auto mx-6">
+                <div class="print-footer-sig border border-gray-300 rounded-lg py-8 px-10 flex justify-between items-end mx-6 mt-8">
                     <div class="text-center">
                         <div class="w-56 border-t border-gray-400 mb-2"></div>
                         <p class="text-sm font-medium text-gray-600">Recebido por</p>
