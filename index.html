@@ -47,14 +47,17 @@
         @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
         @media print {
             .no-print { display: none !important; }
-            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; min-height: 0 !important; height: auto !important; }
+            .print-area { box-shadow: none !important; margin: 0 !important; padding: 15px !important; min-height: 0 !important; height: auto !important; display: block !important; }
             body { background: white !important; }
-            .print-footer-sig { page-break-inside: avoid !important; break-inside: avoid !important; background: white !important; padding: 15px 40px !important; }
-            .print-content { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .print-content { display: block !important; flex: none !important; }
+            .print-footer-sig { page-break-inside: avoid !important; break-inside: avoid !important; background: white !important; padding: 15px 40px !important; margin-top: 40px !important; }
+            .print-header { display: block !important; }
+            .print-screen-header { display: none !important; }
+            .print-screen-only { display: none !important; }
             #tabelaRelatório thead { display: table-header-group !important; }
             #screenC { page-break-after: avoid !important; }
         }
-        @page { size: A4; margin: 10mm; @bottom-center { content: ""; } }
+        @page { size: A4; margin: 10mm; }
     </style>
     <style>.netlify-badge, [class*="netlify"], [id*="netlify"]{display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important;position:fixed!important;bottom:-100px!important;z-index:-9999!important}</style>
 </head>
