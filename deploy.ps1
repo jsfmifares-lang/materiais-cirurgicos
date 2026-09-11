@@ -7,4 +7,4 @@ if (Test-Path $envFile) {
     }
 }
 Set-Location $PSScriptRoot
-wrangler pages deploy . --project-name=controle-entrega-materiais --commit-dirty=true
+wrangler pages deploy . --project-name=controle-entrega-materiais --commit-dirty=true --branch=main
