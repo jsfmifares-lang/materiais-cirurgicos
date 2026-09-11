@@ -2583,8 +2583,8 @@
                 var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
                 var pageW = pdf.internal.pageSize.getWidth();
                 var pageH = pdf.internal.pageSize.getHeight();
-                var margin = 0;
-                var contentW = pageW;
+                var margin = 5;
+                var contentW = pageW - 2 * margin;
                 var contentH = pageH;
                 var imgW = contentW;
                 var imgH = canvas.height * imgW / canvas.width;
