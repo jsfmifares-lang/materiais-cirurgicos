@@ -683,6 +683,7 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzInL3tL-yvsVrfw3P8zOeuR7XwoYrwT2yNhceQ0_7dfdw0X88TW7yTim1ZXcjwFwI4/exec';
         var GAS_URL = window.GAS_API_URL || '';
@@ -2560,6 +2561,17 @@
             if (printHeader) printHeader.style.display = 'block';
             if (screenHeader) screenHeader.style.display = 'none';
             if (screenOnly) screenOnly.style.display = 'none';
+
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                // Sem jsPDF disponível — usa a impressão do navegador
+                window.print();
+                element.style.height = savedStyles.areaH;
+                element.style.minHeight = savedStyles.areaMH;
+                if (printHeader) printHeader.style.display = savedStyles.headerDisplay;
+                if (screenHeader) screenHeader.style.display = savedStyles.screenHeaderDisplay;
+                if (screenOnly) screenOnly.style.display = savedStyles.screenOnlyDisplay;
+                return;
+            }
 
             html2canvas(element, { scale: 2, useCORS: true }).then(function(canvas) {
                 var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
