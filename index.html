@@ -2543,6 +2543,24 @@
         function baixarPDF() {
             var element = document.getElementById('printArea');
             var numPedido = document.getElementById('relNumPedidoPrint')?.textContent || document.getElementById('relNumPedido')?.textContent || 'pedido';
+
+            // Aplica estilos de impressão temporariamente
+            var printHeader = element.querySelector('.print-header');
+            var screenHeader = element.querySelector('.print-screen-header');
+            var screenOnly = element.querySelector('.print-screen-only');
+            var savedStyles = {
+                areaH: element.style.height,
+                areaMH: element.style.minHeight,
+                headerDisplay: printHeader?.style.display,
+                screenHeaderDisplay: screenHeader?.style.display,
+                screenOnlyDisplay: screenOnly?.style.display,
+            };
+            element.style.height = 'auto';
+            element.style.minHeight = '0';
+            if (printHeader) printHeader.style.display = 'block';
+            if (screenHeader) screenHeader.style.display = 'none';
+            if (screenOnly) screenOnly.style.display = 'none';
+
             var opt = {
                 margin: [10, 0, 10, 0],
                 filename: 'pedido_' + numPedido + '.pdf',
@@ -2551,7 +2569,15 @@
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             };
-            html2pdf().set(opt).from(element).save();
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                // Restaura estilos originais
+                element.style.height = savedStyles.areaH;
+                element.style.minHeight = savedStyles.areaMH;
+                if (printHeader) printHeader.style.display = savedStyles.headerDisplay;
+                if (screenHeader) screenHeader.style.display = savedStyles.screenHeaderDisplay;
+                if (screenOnly) screenOnly.style.display = savedStyles.screenOnlyDisplay;
+            });
         }
 
         // Init
