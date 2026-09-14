@@ -2622,14 +2622,26 @@
 
         // Init
         (async function init() {
-            document.getElementById('numeroPedido').value = await gerarNumeroPedido();
+            // Preenche data e número imediatamente
             document.getElementById('dataEmissao').value = formatarDataBR();
-            pedidoAtual.numero = document.getElementById('numeroPedido').value;
             pedidoAtual.dataEmissao = document.getElementById('dataEmissao').value;
+
+            // Número provisório imediato
+            document.getElementById('numeroPedido').value = '000001';
+            pedidoAtual.numero = '000001';
+
             _restaurarCadastrosCache();
             _restaurarMateriaisCache();
             carregarTodosCadastros();
             _loadRefCache();
+
+            // Atualiza número real em segundo plano
+            gerarNumeroPedido().then(function(numero) {
+                if (numero) {
+                    document.getElementById('numeroPedido').value = numero;
+                    pedidoAtual.numero = numero;
+                }
+            });
         })();
     </script>
 </body>
