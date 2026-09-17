@@ -2649,6 +2649,23 @@
             document.getElementById('sidebarMenu').classList.remove('flex');
         }
 
+        function toggleMobileSidebar() {
+            var sb = document.getElementById('sidebar');
+            var backdrop = document.getElementById('mobileSidebarBackdrop');
+            var isOpen = !sb.classList.contains('-translate-x-full');
+            if (isOpen) {
+                // Fechar: volta para fora da tela e esconde o backdrop
+                sb.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+                collapseSidebar();
+            } else {
+                // Abrir no mobile: traz o drawer e mostra o backdrop
+                sb.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                expandSidebar();
+            }
+        }
+
         function imprimirRelatorio() {
             window.print();
         }
