@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Controle de entrega de materiais cirúrgicos hospitalares">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Entrega Mat">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -55,6 +63,10 @@
             body { background: white !important; }
             .print-footer-sig { page-break-inside: avoid !important; background: white !important; padding: 15px 40px !important; }
             #tabelaRelatório thead { display: table-header-group !important; }
+            .print-header, .print-screen-header { flex-direction: row !important; justify-content: space-between !important; align-items: flex-start !important; gap: 0 !important; }
+            .print-footer-sig { flex-direction: row !important; justify-content: space-between !important; align-items: flex-end !important; gap: 0 !important; }
+            #tabelaRelatório { min-width: 0 !important; }
+            div.overflow-x-auto { overflow: visible !important; }
         }
         @page { margin-left: 0; margin-right: 0; @bottom-center { content: "Página " counter(page) " de " counter(pages); font-size: 9px; color: #9ca3af; } }
     </style>
@@ -62,14 +74,18 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <div id="toastContainer" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed top-4 right-4 left-4 md:left-auto z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- NAV BAR -->
     <nav class="no-print bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto px-4 flex items-center gap-2 h-12">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-            <span class="font-bold text-gray-800 text-sm">Entrega Materiais</span>
-            <div class="ml-auto flex gap-2">
+        <div class="max-w-6xl mx-auto px-4 flex items-center gap-2 h-12 overflow-x-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span class="font-bold text-gray-800 text-sm flex-shrink-0">Entrega Materiais</span>
+            <div class="ml-auto flex gap-2 flex-shrink-0">
+                <button onclick="toggleMobileSidebar()" class="md:hidden px-2 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600 active:bg-gray-300 transition" title="Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    Menu
+                </button>
                 <button id="navA" class="nav-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500 text-white" onclick="showScreen('A')">Pedido</button>
                 <button id="navB" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 text-gray-600" onclick="avancarParaLançamentos()" disabled>Lançamentos</button>
                 <div id="navImpressaoBtns" class="hidden flex gap-1">
@@ -106,29 +122,29 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Novo Pedido
                 </h1>
-                <div class="flex items-center gap-2 ml-auto">
-                    <label class="text-sm font-medium">N. Pedido:</label>
-                    <input type="text" id="numeroPedido" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm font-mono w-40">
+                <div class="flex items-center gap-2 ml-auto w-full md:w-auto">
+                    <label class="text-sm font-medium shrink-0">N. Pedido:</label>
+                    <input type="text" id="numeroPedido" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm font-mono flex-1 min-w-0 md:flex-none md:w-40">
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium">Responsável:</label>
-                    <input type="text" id="responsavel" value="Hérica Freire" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm w-48 placeholder-white/60">
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <label class="text-sm font-medium shrink-0">Responsável:</label>
+                    <input type="text" id="responsavel" value="Hérica Freire" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm flex-1 min-w-0 md:flex-none md:w-48 placeholder-white/60">
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium">Emissao:</label>
-                    <input type="text" id="dataEmissao" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm w-28">
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <label class="text-sm font-medium shrink-0">Emissao:</label>
+                    <input type="text" id="dataEmissao" readonly class="bg-white/20 border border-white/30 rounded px-3 py-1.5 text-sm flex-1 min-w-0 md:flex-none md:w-28">
                 </div>
             </div>
         </div>
 
-        <div class="max-w-6xl mx-auto p-6 pl-16">
+        <div class="max-w-6xl mx-auto p-4 md:p-6 pl-4 md:pl-16">
             <!-- Main Form -->
-            <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="bg-white rounded-xl shadow-md p-4 md:p-6">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     Dados do Pedido
                 </h2>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hospital</label>
                         <input type="text" id="hospital" oninput="verificarCamposPreenchidos()" autocomplete="off" placeholder="Digite para buscar..." class="placeholder-gray w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
@@ -155,7 +171,8 @@
     </div>
 
     <!-- ==================== SIDEBAR ==================== -->
-    <div id="sidebar" class="fixed top-0 left-0 h-full bg-white shadow-lg border-r border-gray-200 z-50 transition-all duration-300" style="width:56px" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()">
+    <div id="mobileSidebarBackdrop" class="no-print hidden fixed inset-0 bg-black/40 z-[48] md:hidden" onclick="toggleMobileSidebar()"></div>
+    <div id="sidebar" class="no-print fixed top-0 left-0 h-full bg-white shadow-lg border-r border-gray-200 z-50 transition-all duration-300 -translate-x-full md:translate-x-0" style="width:56px" onmouseenter="expandSidebar()" onmouseleave="collapseSidebar()">
         <div class="flex items-center justify-center h-12 border-b border-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </div>
@@ -204,8 +221,8 @@
     <div id="screenB" class="screen hidden">
         <!-- Header Azul -->
         <div class="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-3 shadow-lg">
-            <div class="max-w-6xl mx-auto flex items-center justify-between">
-                <h1 class="text-lg font-bold">Endocenter – Material Cirúrgico Hospitalar</h1>
+            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <h1 class="text-sm md:text-lg font-bold">Endocenter – Material Cirúrgico Hospitalar</h1>
                 <div class="flex items-center gap-4">
                     <span class="text-sm">Pedido N° <span id="infoPedidoNum" class="font-mono bg-white/20 px-2 py-0.5 rounded">-</span></span>
                     <button id="btnSalvarImprimir" onclick="salvarEImprimir()" title="Salvar e Imprimir" class="hover:bg-white/20 p-1.5 rounded transition">
@@ -221,14 +238,14 @@
         <!-- Inputs -->
         <div class="max-w-6xl mx-auto p-4 space-y-3">
             <!-- Código Barras -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 md:gap-3">
                 <input type="text" id="inputCódigo"
-                    class="flex-1 border-2 border-primary-400 rounded px-4 py-2.5 text-base font-mono focus:ring-2 focus:ring-primary-400 outline-none uppercase bg-white"
+                    class="flex-1 min-w-0 border-2 border-primary-400 rounded px-3 md:px-4 py-2.5 text-base font-mono focus:ring-2 focus:ring-primary-400 outline-none uppercase bg-white"
                     placeholder="Código Barras"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();buscarMaterial();}">
-                <button onclick="openModalInserirManual()" class="bg-accent-500 hover:bg-accent-600 text-white font-semibold py-2.5 px-4 rounded text-sm transition whitespace-nowrap flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Inserir Manual
+                <button onclick="openModalInserirManual()" class="bg-accent-500 hover:bg-accent-600 text-white font-semibold py-2.5 px-3 md:px-4 rounded text-xs md:text-sm transition whitespace-nowrap flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span class="hidden sm:inline">Inserir Manual</span><span class="sm:hidden">Manual</span>
                 </button>
             </div>
 
@@ -254,9 +271,9 @@
         </div>
 
         <!-- Tabela de Itens -->
-        <div class="max-w-6xl mx-auto px-4 pb-4">
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                <table class="w-full text-sm" style="table-layout:fixed">
+        <div class="max-w-6xl mx-auto px-2 md:px-4 pb-4">
+            <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+                <table class="w-full text-sm min-w-[560px]" style="table-layout:fixed">
                     <thead class="bg-success-500 text-white text-xs">
                         <tr>
                             <th class="px-3 py-2 text-left" style="width:50px">SEQ</th>
@@ -279,11 +296,11 @@
     <!-- ==================== SCREEN C ==================== -->
     <div id="screenC" class="screen hidden">
 
-        <div class="max-w-4xl mx-auto p-6">
-            <div id="printArea" class="print-area bg-white rounded-xl shadow-lg p-8 relative flex flex-col">
+        <div class="max-w-4xl mx-auto p-3 md:p-6">
+            <div id="printArea" class="print-area bg-white rounded-xl shadow-lg p-4 md:p-8 relative flex flex-col">
                 <!-- Print-only header (repeats on each page) -->
                 <div class="print-header">
-                    <div class="flex justify-between items-start mb-2">
+                    <div class="flex flex-col md:flex-row md:justify-between items-start gap-2 mb-2">
                         <div class="flex items-center gap-3">
                             <div id="relLogoContainerPrint" class="flex items-center gap-3">
                                 <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -317,7 +334,7 @@
 
                 <div class="print-content">
                 <!-- Header (visible only on screen, hidden in print) -->
-                <div class="print-screen-header flex justify-between items-start mb-4">
+                <div class="print-screen-header flex flex-col md:flex-row md:justify-between items-start gap-3 mb-4">
                     <div class="flex items-center gap-3">
                         <div id="relLogoContainer" class="flex items-center gap-3">
                             <svg id="relLogoSvg" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -353,7 +370,8 @@
                 </div>
 
                 <!-- Items Table -->
-                <table class="w-full text-sm mb-8" style="table-layout:fixed">
+                <div class="overflow-x-auto">
+                <table class="w-full text-sm mb-8 min-w-[450px]" style="table-layout:fixed">
                     <thead>
                         <tr class="border-t-2 border-b border-gray-300">
                             <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase" style="width:50px">Seq</th>
@@ -368,10 +386,11 @@
                         <tr><td colspan="6" class="px-3 py-4 text-center text-gray-400">Nenhum item</td></tr>
                     </tbody>
                 </table>
+                </div>
                 </div><!-- /print-body -->
 
                 <!-- Signatures -->
-                <div class="print-footer-sig border border-gray-300 rounded-lg py-8 px-10 flex justify-between items-end mx-6 mt-8">
+                <div class="print-footer-sig border border-gray-300 rounded-lg py-6 md:py-8 px-4 md:px-10 flex flex-col md:flex-row justify-between items-center md:items-end mx-2 md:mx-6 mt-6 md:mt-8 gap-y-4 md:gap-y-0">
                     <div class="text-center">
                         <div class="w-56 border-t border-gray-400 mb-2"></div>
                         <p class="text-sm font-medium text-gray-600">Recebido por</p>
@@ -401,7 +420,7 @@
                     Cadastrar Novo Implante
                 </h3>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-4 md:p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Escanear Código de Barras (opcional)</label>
                     <input type="text" id="novoImplBarcode" class="w-full border-2 border-pink-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-400 outline-none font-mono" placeholder="Escaneie o GS1-128 aqui..." onkeydown="if(event.key==='Enter'){event.preventDefault();parseAndFillNovoImplante();}">
@@ -449,7 +468,7 @@
                     Cadastrar
                 </h3>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-4 md:p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                     <input type="text" id="cadastroNome" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent-400 outline-none" placeholder="Nome">
@@ -471,7 +490,7 @@
                     Editar
                 </h3>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-4 md:p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Selecionar</label>
                     <select id="editarSelecionar" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-danger-400 outline-none" onchange="carregarEdicao()">
@@ -499,7 +518,7 @@
             <div class="bg-teal-600 text-white px-6 py-4 rounded-t-xl">
                 <h3 class="text-lg font-bold">Inserindo material manualmente</h3>
             </div>
-            <div class="p-6 space-y-3">
+            <div class="p-4 md:p-6 space-y-3">
                 <div class="relative">
                     <input type="text" id="manualReferência" data-ref="input"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-400 outline-none"
@@ -517,8 +536,8 @@
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 text-gray-600"
                         placeholder="Material">
                 </div>
-                <div class="grid grid-cols-12 gap-2 items-end">
-                    <div class="col-span-4">
+                <div class="grid grid-cols-6 md:grid-cols-12 gap-2 items-end">
+                    <div class="col-span-6 md:col-span-4">
                         <label class="block text-xs text-gray-500 mb-1">Lote-SN</label>
                         <input type="text" id="manualLote"
                             class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
@@ -2743,6 +2762,15 @@
                 }
             });
         })();
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(function (reg) {
+                console.log('Service Worker registrado:', reg.scope);
+            }).catch(function (err) {
+                console.warn('SW registro falhou (offline se configurado):', err);
+            });
+        }
     </script>
 </body>
 </html>
