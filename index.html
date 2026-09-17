@@ -39,6 +39,10 @@
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
         input[type="date"]:focus::-webkit-calendar-picker-indicator { opacity: 1; }
         .placeholder-gray::placeholder { color: #9ca3af; }
+        .autocomplete-dropdown { position: absolute; z-index: 60; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); max-height: 240px; overflow-y: auto; }
+        .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 14px; color: #374151; }
+        .autocomplete-item:hover { background: #f0fdfa; }
+        .autocomplete-item.active { background: #0d9488; color: #fff; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .modal-overlay { background-color: rgba(0,0,0,0.5); }
@@ -127,15 +131,15 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hospital</label>
-                        <select id="hospital" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <input type="text" id="hospital" oninput="verificarCamposPreenchidos()" autocomplete="off" placeholder="Digite para buscar..." class="placeholder-gray w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Médico</label>
-                        <select id="medico" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <input type="text" id="medico" oninput="verificarCamposPreenchidos()" autocomplete="off" placeholder="Digite para buscar..." class="placeholder-gray w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Convênio</label>
-                        <select id="convenio" onchange="verificarCamposPreenchidos()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"><option value="">Selecione...</option></select>
+                        <input type="text" id="convenio" oninput="verificarCamposPreenchidos()" autocomplete="off" placeholder="Digite para buscar..." class="placeholder-gray w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
@@ -591,9 +595,9 @@
             <div class="p-4 overflow-y-auto flex-1 space-y-4">
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <div><span class="text-gray-500">N. Pedido:</span> <strong id="edPedidoNum"></strong></div>
-                    <div><label class="text-gray-500">Hospital:</label> <select id="edHospital" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
-                    <div><label class="text-gray-500">Medico:</label> <select id="edMedico" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
-                    <div><label class="text-gray-500">Convenio:</label> <select id="edConvenio" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"><option value="">Selecione...</option></select></div>
+                    <div><label class="text-gray-500">Hospital:</label> <input type="text" id="edHospital" autocomplete="off" placeholder="Digite para buscar..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"></div>
+                    <div><label class="text-gray-500">Medico:</label> <input type="text" id="edMedico" autocomplete="off" placeholder="Digite para buscar..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"></div>
+                    <div><label class="text-gray-500">Convenio:</label> <input type="text" id="edConvenio" autocomplete="off" placeholder="Digite para buscar..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"></div>
                     <div><label class="text-gray-500">Paciente:</label> <input type="text" id="edPaciente" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1" placeholder="Nome do paciente"></div>
                     <div><label class="text-gray-500">Data Cirurgia:</label> <input type="date" id="edDataCirurgia" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none mt-1"></div>
                 </div>
@@ -1054,20 +1058,7 @@
         }
 
         function _popularSelectCadastros(tipo) {
-            var selectId = _tipoSelectIdCadastros(tipo);
-            var selectEl = document.getElementById(selectId);
-            var dados = cadastrosCache[tipo] || [];
-            if (!selectEl) return;
-
-            var currentVal = selectEl.value;
-            selectEl.innerHTML = '<option value="">Selecione...</option>';
-            dados.forEach(function(item) {
-                var opt = document.createElement('option');
-                opt.value = item.nome;
-                opt.textContent = item.nome;
-                selectEl.appendChild(opt);
-            });
-            selectEl.value = currentVal;
+            // Campos agora são inputs com autocomplete — a lista vem de cadastrosCache em tempo real.
         }
 
         function _persistirCadastrosCache() {
@@ -1549,17 +1540,119 @@
         }
 
         function _popularEdSelectCadastros(tipo, selectId, valorAtual) {
-            var selectEl = document.getElementById(selectId);
-            var dados = cadastrosCache[tipo] || [];
-            if (!selectEl) return;
-            selectEl.innerHTML = '<option value="">Selecione...</option>';
-            dados.forEach(function(item) {
-                var opt = document.createElement('option');
-                opt.value = item.nome;
-                opt.textContent = item.nome;
-                selectEl.appendChild(opt);
+            var el = document.getElementById(selectId);
+            if (el) el.value = valorAtual || '';
+        }
+
+        function _initAutocomplete(inputId, tipo) {
+            var inputEl = document.getElementById(inputId);
+            if (!inputEl) return;
+
+            var wrap = document.createElement('div');
+            wrap.className = 'relative w-full';
+            inputEl.parentNode.insertBefore(wrap, inputEl);
+            wrap.appendChild(inputEl);
+
+            var dd = document.createElement('div');
+            dd.className = 'autocomplete-dropdown hidden';
+            wrap.appendChild(dd);
+
+            var estado = { aberto: false, ativo: -1, programatico: false };
+
+            function listaFiltrada() {
+                var q = _textoBusca(inputEl.value);
+                var jaVistos = {};
+                var out = [];
+                (cadastrosCache[tipo] || []).forEach(function(item) {
+                    var nome = String(item.nome || '');
+                    var chave = nome.toLowerCase();
+                    if (jaVistos[chave]) return;
+                    jaVistos[chave] = true;
+                    if (_textoBusca(nome).indexOf(q) !== -1) out.push(nome);
+                });
+                return out.slice(0, 50);
+            }
+
+            function limparDestaque() {
+                estado.ativo = -1;
+                Array.prototype.forEach.call(dd.children, function(ch) {
+                    ch.classList.remove('active');
+                });
+            }
+
+            function renderizar() {
+                var itens = listaFiltrada();
+                if (!estado.aberto || itens.length === 0) {
+                    dd.classList.add('hidden');
+                    return;
+                }
+                dd.innerHTML = '';
+                itens.forEach(function(nome, i) {
+                    var el = document.createElement('div');
+                    el.className = 'autocomplete-item' + (i === estado.ativo ? ' active' : '');
+                    el.textContent = nome;
+                    el.addEventListener('mousedown', function(e) { e.preventDefault(); selecionar(nome); });
+                    el.addEventListener('mouseenter', function() {
+                        estado.ativo = i;
+                        Array.prototype.forEach.call(dd.children, function(ch, ci) {
+                            ch.classList.toggle('active', ci === i);
+                        });
+                    });
+                    dd.appendChild(el);
+                });
+                dd.classList.remove('hidden');
+                dd.scrollTop = 0;
+            }
+
+            function abrir() { estado.aberto = true; renderizar(); }
+            function fechar() { estado.aberto = false; dd.classList.add('hidden'); }
+
+            function selecionar(nome) {
+                inputEl.value = nome;
+                estado.programatico = true;
+                fechar();
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            inputEl.addEventListener('focus', function() {
+                if (inputEl.value.length > 0) abrir();
             });
-            selectEl.value = valorAtual || '';
+            inputEl.addEventListener('input', function() {
+                if (estado.programatico) { estado.programatico = false; return; }
+                if (inputEl.value.length > 0) abrir(); else fechar();
+            });
+            inputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (dd.classList.contains('hidden')) { abrir(); return; }
+                    var itens = dd.children;
+                    var step = e.key === 'ArrowDown' ? 1 : -1;
+                    var novo = estado.ativo + step;
+                    if (novo < 0) novo = itens.length - 1;
+                    if (novo > itens.length - 1) novo = 0;
+                    estado.ativo = novo;
+                    Array.prototype.forEach.call(itens, function(ch, ci) {
+                        ch.classList.toggle('active', ci === novo);
+                    });
+                    var at = itens[novo];
+                    if (at) {
+                        if (at.offsetTop < dd.scrollTop) dd.scrollTop = at.offsetTop;
+                        if (at.offsetTop + at.offsetHeight > dd.scrollTop + dd.clientHeight) dd.scrollTop = at.offsetTop + at.offsetHeight - dd.clientHeight;
+                    }
+                } else if (e.key === 'Enter') {
+                    if (!dd.classList.contains('hidden') && estado.ativo >= 0 && dd.children[estado.ativo]) {
+                        e.preventDefault();
+                        selecionar(dd.children[estado.ativo].textContent);
+                    }
+                } else if (e.key === 'Escape') {
+                    fechar();
+                    limparDestaque();
+                }
+            });
+
+            document.addEventListener('mousedown', function(e) {
+                if (!wrap.contains(e.target)) { fechar(); limparDestaque(); }
+            });
         }
 
         function editarPedidoAtual() {
@@ -2117,9 +2210,9 @@
             }
         }
 
-        document.getElementById('hospital').addEventListener('change', verificarCamposPedido);
-        document.getElementById('medico').addEventListener('change', verificarCamposPedido);
-        document.getElementById('convenio').addEventListener('change', verificarCamposPedido);
+        document.getElementById('hospital').addEventListener('input', verificarCamposPedido);
+        document.getElementById('medico').addEventListener('input', verificarCamposPedido);
+        document.getElementById('convenio').addEventListener('input', verificarCamposPedido);
         document.getElementById('paciente').addEventListener('input', verificarCamposPedido);
         document.getElementById('dataCirurgia').addEventListener('change', verificarCamposPedido);
         document.getElementById('responsavel').addEventListener('input', verificarCamposPedido);
@@ -2132,9 +2225,9 @@
             var dc = document.getElementById('dataCirurgia');
             dc.classList.toggle('placeholder-active', !dc.value);
         }
-        document.getElementById('hospital').addEventListener('change', atualizarPlaceholderCinza);
-        document.getElementById('medico').addEventListener('change', atualizarPlaceholderCinza);
-        document.getElementById('convenio').addEventListener('change', atualizarPlaceholderCinza);
+        document.getElementById('hospital').addEventListener('input', atualizarPlaceholderCinza);
+        document.getElementById('medico').addEventListener('input', atualizarPlaceholderCinza);
+        document.getElementById('convenio').addEventListener('input', atualizarPlaceholderCinza);
         document.getElementById('dataCirurgia').addEventListener('change', atualizarPlaceholderCinza);
         atualizarPlaceholderCinza();
 
@@ -2622,6 +2715,13 @@
 
         // Init
         (async function init() {
+            _initAutocomplete('hospital', 'Hospital');
+            _initAutocomplete('medico', 'Médico');
+            _initAutocomplete('convenio', 'Convênio');
+            _initAutocomplete('edHospital', 'Hospital');
+            _initAutocomplete('edMedico', 'Médico');
+            _initAutocomplete('edConvenio', 'Convênio');
+
             // Preenche data e número imediatamente
             document.getElementById('dataEmissao').value = formatarDataBR();
             pedidoAtual.dataEmissao = document.getElementById('dataEmissao').value;
